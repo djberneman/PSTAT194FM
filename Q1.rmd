@@ -1,0 +1,3703 @@
+---
+title: "Navigating Pension Investment Risk"
+author: "Dylan Berneman"
+header-includes:
+    - \usepackage{setspace}\doublespacing
+output: pdf_document
+date: '2023-06-10'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+install.packages("plotrix")
+library(plotrix)
+library(ggplot2)
+library(lubridate)
+install.packages("ggrepel")
+library(ggrepel)
+library(readxl)
+install.packages("cowplot")
+library(cowplot)
+install.packages("ggpubr")
+library(ggpubr)
+```
+\newpage
+
+# Executive Summary
+
+|   The purpose of this report is to address the important concerns and questions that have been brought up due to the 16.2% investment loss of the MERS fund experienced in calendar year 2022./
+
+|   We will first address the recent rise in long-term bond yields. The rise in long-term bond yields is a result of the significant increase in interest rates from between 0.25% and 0.5% to between 4.25% and 4.5%.  According to CFP,
+Hal M. Bundrick, the interest rate is likely to only remain high until the Fed reaches its 2% inflation goal. At that point, the Fed will begin lowering interest rates to restimulate the economy. Since this is projected to occur sometime in 2024, it indicates that the recent rise in long-term bond yields will be temporary effect which will go away in the near future.
+
+
+Furthermore, the 2022 experience is unlikely to repeat itself once interest rates return to normal. As it is, there was only a *blank percent probability of experiencing a loss of 16% or more.* elaborate on how unusual the 2022 experience was, it has been calculated that the 
+\
+# The 60/40 Investment Approach
+\
+|   The first topic that will be addressed is the reason for 2022 investment loss. During 2022, bonds suffered their worst year on record. This is vitally important to note because bonds are considered to be a defensive asset because they are less volatile than stocks. For this reason, investors include bonds in their portfolio as a way to help reduce volatility and overall portfolio risk in the event that there is a significant market downturn, which did occur in 2022. Unexpectedly, the US government increased the interest rate by a cummulative 4.25%, the most since 1980. Consequentially, when interest rates increase, the value of bonds decreases. Additionally, inflation impacts the real rate of return of fixed-income investments. This decrease in real return makes the bond less attractive to investors, leading to a decrease in bond prices. When inflation is larger than the interest rate, investors tend to reinvest their fixed-income investments in order to minimize their total return losses, leading to a decrease in the real value of the fixed-income investments. Because these events took place concurrently alongside a significant market downturn, every single asset allocation strategy resulted in a minimum total loss of 13.3%. 
+
+
+```{r, warning=FALSE}
+
+Monthly_Data <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Monthly", range = "B10:D1174")
+
+Monthly_Data1 <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Monthly", range = "B10:D1174")
+
+Data <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Annual", range = "B10:D107")
+
+colnames(Data) = c("Date", "LCTR_true", "FIXED_true")
+```
+
+# Inflation and Treasury bond
+```{r}
+
+IB <- read_excel("Project 2 Historical Data.xlsx",
+    range = "AO11:AR1175", col_types = c("numeric",
+        "skip", "skip", "numeric"))
+
+IB["Date"] = Monthly_Data1$Date 
+IB = IB[,c(3,1:2)]
+colnames(IB) = c("Date", "t_bill", "inflation")
+
+IB_plus1 = IB
+IB_plus1[,2:3] = 1 + IB_plus1[,2:3]
+
+# 12-month compounded
+IB_Monthly_cmp12 = IB
+IB_Monthly_cmp12 = IB_Monthly_cmp12[1:1153,]
+IB_Monthly_cmp12[,2:3]=NA
+
+# 30 yr compounded
+IB_Monthly_cmp30 = IB
+IB_Monthly_cmp30 = IB_Monthly_cmp30[1:805,]
+IB_Monthly_cmp30[,2:3]=NA
+
+# 12-month arith avg
+IB_Monthly_arith12 = IB
+IB_Monthly_arith12 = IB_Monthly_arith12[1:1153,]
+IB_Monthly_arith12[,2:3]=NA
+
+# 30 yr arith avg
+IB_Monthly_arith30 = IB
+IB_Monthly_arith30 = IB_Monthly_arith30[1:805,]
+IB_Monthly_arith30[,2:3]=NA
+
+# 12-month geom avg
+IB_Monthly_geom12 = IB
+IB_Monthly_geom12 = IB_Monthly_geom12[1:1153,]
+IB_Monthly_geom12[,2:3]=NA
+
+# 30 yr geom avg
+IB_Monthly_geom30 = IB
+IB_Monthly_geom30 = IB_Monthly_geom30[1:805,]
+IB_Monthly_geom30[,2:3]=NA
+
+
+# IB
+for(j in 2:3){
+  for(i in 1:805){
+    x=i
+    y1=x+11
+    y2=x+359
+    IB_Monthly_cmp12[i,j] = prod(IB_plus1[x:y1, j])-1
+    IB_Monthly_cmp30[i,j] = prod(IB_plus1[x:y2, j])-1
+    IB_Monthly_geom12[i,j] = prod(IB_plus1[x:y1, j])^(1/12)-1
+    IB_Monthly_geom30[i,j] = prod(IB_plus1[x:y2, j])^(1/360)-1
+    IB_Monthly_arith12[i,j] = sum(IB[x:y1, j])/12
+    IB_Monthly_arith30[i,j] = sum(IB[x:y2, j])/360}
+  for(i in 806:1153){
+    x=i
+    y1=x+11
+    IB_Monthly_cmp12[i,j] = prod(IB_plus1[x:y1, j])-1
+    IB_Monthly_geom12[i,j] = prod(IB_plus1[x:y1, j])^(1/12)-1
+    IB_Monthly_arith12[i,j] = sum(IB[x:y1, j])/12}}
+
+IB_Monthly_cmp12 = IB_Monthly_cmp12 %>%
+  mutate("diff" = IB_Monthly_cmp12$t_bill - IB_Monthly_cmp12$inflation)
+
+IB_Monthly_cmp30 = IB_Monthly_cmp30 %>%
+  mutate("diff" = IB_Monthly_cmp30$t_bill - IB_Monthly_cmp30$inflation)
+
+IB_Monthly_geom12 = IB_Monthly_geom12 %>%
+  mutate("diff" = IB_Monthly_geom12$t_bill - IB_Monthly_geom12$inflation)
+
+IB_Monthly_geom30 = IB_Monthly_geom30 %>%
+  mutate("diff" = IB_Monthly_geom30$t_bill - IB_Monthly_geom30$inflation)
+
+IB_Monthly_arith12 = IB_Monthly_arith12 %>%
+  mutate("diff" = IB_Monthly_arith12$t_bill - IB_Monthly_arith12$inflation)
+
+IB_Monthly_arith30 = IB_Monthly_arith30 %>%
+  mutate("diff" = IB_Monthly_arith30$t_bill - IB_Monthly_arith30$inflation)
+```
+
+
+# Returns
+```{r}
+options(digits = 5)
+options(scipen = 8)
+Monthly_Data <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Monthly", range = "B10:D1174")
+
+colnames(Monthly_Data) = c("Date", "Large_Cap", "Fixed")
+
+Monthly_Data_plus1 = Monthly_Data
+Monthly_Data_plus1[,2:3] = 1 + Monthly_Data_plus1[,2:3]
+
+# 12-month compounded
+Monthly_Data_cmp12 = Monthly_Data
+Monthly_Data_cmp12 = Monthly_Data_cmp12[1:1153,]
+Monthly_Data_cmp12[,2:3]=NA
+
+# 30 yr compounded
+Monthly_Data_cmp30 = Monthly_Data
+Monthly_Data_cmp30 = Monthly_Data_cmp30[1:805,]
+Monthly_Data_cmp30[,2:3]=NA
+
+# 12-month arith avg
+Monthly_Data_arith12 = Monthly_Data
+Monthly_Data_arith12 = Monthly_Data_arith12[1:1153,]
+Monthly_Data_arith12[,2:3]=NA
+
+# 30 yr arith avg
+Monthly_Data_arith30 = Monthly_Data
+Monthly_Data_arith30 = Monthly_Data_arith30[1:805,]
+Monthly_Data_arith30[,2:3]=NA
+
+# 12-month geom avg
+Monthly_Data_geom12 = Monthly_Data
+Monthly_Data_geom12 = Monthly_Data_geom12[1:1153,]
+Monthly_Data_geom12[,2:3]=NA
+
+# 30 yr geom avg
+Monthly_Data_geom30 = Monthly_Data
+Monthly_Data_geom30 = Monthly_Data_geom30[1:805,]
+Monthly_Data_geom30[,2:3]=NA
+
+
+vect0 = vector()
+for(i in 0:100){
+  vect0 = append(vect0, paste0("Folio ", i, "/",100-i))
+}
+
+# Data
+for(j in 2:3){
+  for(i in 1:805){
+    x=i
+    y1=x+11
+    y2=x+359
+    Monthly_Data_cmp12[i,j] = prod(Monthly_Data_plus1[x:y1, j])-1
+    Monthly_Data_cmp30[i,j] = prod(Monthly_Data_plus1[x:y2, j])-1
+    Monthly_Data_geom12[i,j] = prod(Monthly_Data_plus1[x:y1, j])^(1/12)-1
+    Monthly_Data_geom30[i,j] = prod(Monthly_Data_plus1[x:y2, j])^(1/360)-1
+    Monthly_Data_arith12[i,j] = sum(Monthly_Data[x:y1, j])/12
+    Monthly_Data_arith30[i,j] = sum(Monthly_Data[x:y2, j])/360}
+  for(i in 806:1153){
+    x=i
+    y1=x+11
+    Monthly_Data_cmp12[i,j] = prod(Monthly_Data_plus1[x:y1, j])-1
+    Monthly_Data_geom12[i,j] = prod(Monthly_Data_plus1[x:y1, j])^(1/12)-1
+    Monthly_Data_arith12[i,j] = sum(Monthly_Data[x:y1, j])/12}}
+
+for(i in 0:100){
+  alpha = i/100
+  x = vect0[i+1]
+  Monthly_Data[x]=NA
+  Monthly_Data_cmp12[x]=NA
+  Monthly_Data_cmp30[x]=NA
+  Monthly_Data_geom12[x]=NA
+  Monthly_Data_geom30[x]=NA
+  Monthly_Data_arith12[x]=NA
+  Monthly_Data_arith30[x]=NA
+  for(j in 1:805){
+    Monthly_Data[j, i+4] = alpha + Monthly_Data$Large_Cap[j] + 
+      (1-alpha) * Monthly_Data$Fixed[j]
+    Monthly_Data_cmp12[j, i+4] = alpha * Monthly_Data_cmp12$Large_Cap[j] + 
+      (1-alpha)*Monthly_Data_cmp12$Fixed[j]
+    Monthly_Data_cmp30[j, i+4] = alpha * Monthly_Data_cmp30$Large_Cap[j] + 
+      (1-alpha)*Monthly_Data_cmp30$Fixed[j]
+    Monthly_Data_geom12[j, i+4] = alpha * Monthly_Data_geom12$Large_Cap[j] + 
+      (1-alpha)*Monthly_Data_geom12$Fixed[j]
+    Monthly_Data_geom30[j, i+4] = alpha * Monthly_Data_geom30$Large_Cap[j] + 
+      (1-alpha)*Monthly_Data_geom30$Fixed[j]
+    Monthly_Data_arith12[j, i+4] = alpha * Monthly_Data_arith12$Large_Cap[j] + 
+      (1-alpha)*Monthly_Data_arith12$Fixed[j]
+    Monthly_Data_arith30[j, i+4] = alpha * Monthly_Data_arith30$Large_Cap[j] + 
+      (1-alpha)*Monthly_Data_arith30$Fixed[j]}
+  for(j in 806:1153){
+    Monthly_Data[j, i+4] = alpha + Monthly_Data$Large_Cap[j] + 
+      (1-alpha) * Monthly_Data$Fixed[j]
+    Monthly_Data_cmp12[j, i+4] = alpha * Monthly_Data_cmp12$Large_Cap[j] + 
+      (1-alpha)*Monthly_Data_cmp12$Fixed[j]
+    Monthly_Data_geom12[j, i+4] = alpha * Monthly_Data_geom12$Large_Cap[j] + 
+      (1-alpha)*Monthly_Data_geom12$Fixed[j]
+    Monthly_Data_arith12[j, i+4] = alpha * Monthly_Data_arith12$Large_Cap[j] + 
+      (1-alpha)*Monthly_Data_arith12$Fixed[j]}
+  for(j in 1154:1164){
+    Monthly_Data[j, i+4] = alpha + Monthly_Data$Large_Cap[j] + 
+      (1-alpha) * Monthly_Data$Fixed[j]}}
+
+
+Monthly_Data_prob = Monthly_Data[, c(1, 4:104)]
+Monthly_Data_prob[, 2:102] = NA
+for(i in 0:100){
+  mean = sum(Monthly_Data[, i+4])/1164
+  stddev = sqrt(var(Monthly_Data[, i+4]))
+  for(j in 1:1164){
+    if(Monthly_Data[j, i+4][[1]] < 0){
+      lower_tail = TRUE}
+    else{
+      lower_tail = FALSE}
+    Monthly_Data_prob[j, i+2] = pnorm(Monthly_Data[j, i+4][[1]], mean = mean, sd = stddev, lower.tail = lower_tail)}}
+
+Monthly_expect = Monthly_Data_prob
+for(i in 0:100){
+  for(j in 1:1164){
+    Monthly_expect[j, i+2] = 1 + Monthly_Data[j, i+4][[1]] * Monthly_Data_prob[j, i+2][[1]]}}
+
+# expectations
+vect_expect = vector()
+for(i in 0:100){
+  sum = 0
+  for(j in 1:1164){
+    return = Monthly_expect[j,i+2] * prod(IB_plus1$inflation[j:1164])
+    sum = sum + return}
+  vect_expect = append(vect_expect, sum)}
+
+sum=0
+for(j in 805:1164){
+    return = Monthly_expect[j,62] * prod(Monthly_expect[805:1164, 62])
+    sum = sum + return}
+
+
+Monthly_expect_inflate = Monthly_expect
+Monthly_expect_inflate[,2:102]=NA
+
+Monthly_Data_rate = Monthly_Data[,c(1,4:104)]
+Monthly_Data_rate[,2:102] = Monthly_Data_rate[,2:102]+1
+
+for(i in 0:100){
+  for(j in 1:1164){
+    Monthly_expect_inflate[j,i+2] = Monthly_Data_rate[j, i+2] - IB$t_bill[j] + IB$inflation[j]}}
+
+
+prod(Monthly_expect_inflate[1:816,2])
+
+for(i in 0:100){
+  for(j in 1:1164){
+    return = Monthly_expect[j,i+2] * prod(IB_plus1$inflation[j:1164])
+    sum = sum + return}
+
+prod(IB_plus1$inflation[1153:1164])
+
+
+vect_expect2 = vector()
+for(j in 0:100){
+  vect_expect2 = append(vect_expect2, prod(Monthly_expect_inflate[, i+2]))}
+
+
+# positive and negative values
+Monthly_pos = Monthly_Data_prob
+Monthly_pos[,2:102] = NA
+Monthly_neg = Monthly_pos
+for(i in 0:100){
+  for(j in 1:1164){
+    if(Monthly_Data[j, i+4] > 0){
+      Monthly_pos[j, i+2] = Monthly_Data[j, i+4][[1]]}
+    else{
+      Monthly_neg[j, i+2] = Monthly_Data[j, i+4][[1]]}}}
+
+# Monthly
+Monthly_stats = data.frame(matrix(nrow = 101, ncol=7))
+colnames(Monthly_stats) = c("Asset_Class_Allocation", "Num", "Total_Return_Mean", "Total_Return_stddev", "Excpectation", "Sharpe_Ratio", "RiskReward_Ratio")
+for(i in 0:100){
+  Monthly_stats$Asset_Class_Allocation[i+1] = paste0("Fixed Income: ", i, "%    Equities: ", 100 - i, "%")
+  Monthly_stats$Num = i}
+
+for(i in 0:100){
+  Monthly_stats$Total_Return_Mean[i+1] = sum(Monthly_Data[, i+4])/1164
+  Monthly_stats$Total_Return_stddev[i+1] = sqrt(var(Monthly_Data[, i+4]))
+  Monthly_stats$Excpectation[i+1] = vect_expect[i]
+  Monthly_stats$Shar
+  Monthly_stats$
+  Monthly_stats$
+  Monthly_stats$
+  Monthly_stats$
+  
+}
+
+
+
+
+
+
+Month
+# 12-month returns
+for(i in 1:1153){
+  x=1
+  data1 = 1
+  data2 = 1
+  while(x <= 12){
+    data1 = data1 * (1 + Monthly_Data$`Large Cap TR`[i+x-1])
+    data2 = data2 * (1 + Monthly_Data$FIXED[i+x-1])
+    x = x + 1}
+  Monthly_Data$`Large Cap TR`[i] = data1 - 1
+  Monthly_Data$FIXED[i] = data2 - 1}
+
+Monthly_Data = Monthly_Data[1:1153,]
+
+#12-month allocation returns
+for(i in 0:100){
+  alpha = i/100
+  Monthly_Data[paste0("LC", i)] = NA
+  for(j in 1:1153){
+    Monthly_Data[j, length(colnames(Monthly_Data))] = alpha*Monthly_Data$`Large Cap TR`[j]}
+  Monthly_Data[paste0("FIX", i)] = NA
+  for(j in 1:1153){
+    Monthly_Data[j, length(colnames(Monthly_Data))] = (1-alpha)*Monthly_Data$FIXED[j]}
+  Monthly_Data[paste0("Folio", i)] = NA
+  for(j in 1:1153){
+    Monthly_Data[j, length(colnames(Monthly_Data))] = Monthly_Data[j, length(colnames(Monthly_Data))-1] + Monthly_Data[j, length(colnames(Monthly_Data))-2]}}
+
+# write.csv(Monthly_Data, "Monthly_Data.csv", row.names=FALSE, quote=FALSE)
+Monthly_Data = read.csv("Monthly_Data.csv")
+
+# monthly allocation returns
+# for(i in 0:100){
+#   alpha = i/100
+#   Monthly_Data1[paste0("LC", i)] = NA
+#   for(j in 1:1164){
+#     Monthly_Data1[j, length(colnames(Monthly_Data1))] = alpha*Monthly_Data1$`Large Cap TR`[j]}
+#   Monthly_Data1[paste0("FIX", i)] = NA
+#   for(j in 1:1164){
+#     Monthly_Data1[j, length(colnames(Monthly_Data1))] = (1-alpha)*Monthly_Data1$FIXED[j]}
+#   Monthly_Data1[paste0("Folio", i)] = NA
+#   for(j in 1:1164){
+#     Monthly_Data1[j, length(colnames(Monthly_Data1))] = Monthly_Data1[j, length(colnames(Monthly_Data1))-1] + Monthly_Data1[j, length(colnames(Monthly_Data1))-2]}}
+
+
+# write.csv(Monthly_Data1, "Monthly_Data1.csv", row.names=FALSE, quote=FALSE)
+Monthly_Data1 = read.csv("Monthly_Data1.csv")
+
+# Annual Allocation returns
+for(i in 0:100){
+  alpha = i/100
+  Data[paste0("LC", i)] = NA
+  for(j in 1:97){
+    Data[j, length(colnames(Data))] = alpha*Data$LCTR_true[j]}
+  Data[paste0("FIX", i)] = NA
+  for(j in 1:97){
+    Data[j, length(colnames(Data))] = (1-alpha)*Data$FIXED_true[j]}
+  Data[paste0("Folio", i)] = NA
+  for(j in 1:97){
+    Data[j, length(colnames(Data))] = Data[j, length(colnames(Data))-1] + Data[j, length(colnames(Data))-2]}}
+
+# Annual from Monthly
+annual = data.frame(matrix(ncol=306,nrow=97))
+colnames(annual) = colnames(Monthly_Data)
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    annual[x,] = Monthly_Data[i,]
+    x = x + 1}}
+annual$Date = Data$Date
+
+
+```
+
+
+```{r}
+IB <- read_excel("Project 2 Historical Data.xlsx",
+    range = "AO11:AR1175", col_types = c("numeric",
+        "skip", "skip", "numeric"))
+IB["Date"] = NA
+IB$Date = Monthly_Data1$Date
+IB = IB[,c(3,1:2)]
+
+IB_x = IB
+IB_x[,2:3] = 1 + IB_x[,2:3]
+IB_Monthly = IB
+IB_Monthly = IB_Monthly[1:1153,]
+IB_Monthly[,2:3]=NA
+
+for(j in 2:3){
+  for(i in 1:1153){
+    x=i
+    y=x+11
+    IB_Monthly[i,j] = prod(IB_x[x:y, j])-1}}
+
+IB_Monthly_1a = IB_Monthly
+IB_Monthly_1g = IB_Monthly
+IB_Monthly_1g[,2:3] = 1 + IB_Monthly_1g[,2:3]
+IB_Monthly_a = IB_Monthly_1a
+IB_Monthly_a[,2:3] = NA
+IB_Monthly_g = IB_Monthly_1g
+IB_Monthly_g[,2:3] = NA
+
+for(j in 2:3){
+  for(i in 1:794){
+    x=i
+    y=x+359
+    IB_Monthly_g[i,j] = prod(IB_Monthly_1g[x:y, j])^(1/360)-1
+    IB_Monthly_a[i,j] = sum(IB_Monthly_1a[x:y, j])/360}}
+
+IB_Monthly_g["diff"] = IB_Monthly_g$`Ibbotson® SBBI® US (30-Day) Treasury Bills`-IB_Monthly_g$`Ibbotson® SBBI® US Inflation`
+IB_Monthly_a["diff"] = IB_Monthly_a$`Ibbotson® SBBI® US (30-Day) Treasury Bills`-IB_Monthly_a$`Ibbotson® SBBI® US Inflation`
+
+Annual_IB = data.frame(matrix(ncol=4, nrow=97))
+
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Annual_IB[x,] = IB_Monthly[i,]
+    x = x + 1}}
+Annual_IB$Date = Data$Date
+
+vect1 = vector()
+vect1 = append(vect1, c(0.02755,
+0.029541667,
+0.030975,
+0.034433333,
+0.034825,
+0.040783333,
+0.041191667,
+0.039416667,
+0.04055,
+0.040733333,
+0.041866667,
+0.042233333,
+0.046941667,
+0.049,
+0.053458333,
+0.061725,
+0.067341667,
+0.059983333,
+0.057966667,
+0.069875,
+0.079833333,
+0.082133333,
+0.079441667,
+0.07725,
+0.085441667,
+0.093166667,
+0.114333333,
+0.135633333,
+0.126633333,
+0.112558333,
+0.124333333,
+0.107033333,
+0.0769,
+0.086091667,
+0.089366667,
+0.084016667,
+0.086191667,
+0.08085,
+0.07675,
+0.065791667))
+
+vect2 = vector()
+vect2 = append(vect2, c(-0.007435,
+0.003759,
+0.029509,
+0.028637,
+0.017531,
+0.017195,
+0.013560,
+0.006723,
+0.013267,
+0.016340,
+0.009688,
+0.019089,
+0.034097,
+0.029987,
+0.046218,
+0.060292,
+0.054350,
+0.032212,
+0.033553,
+0.083865,
+0.116945,
+0.067287,
+0.047612,
+0.065064,
+0.086674,
+0.125476,
+0.118598,
+0.085816,
+0.037757,
+0.037292,
+0.038809,
+0.037347,
+0.010971,
+0.043487,
+0.043337,
+0.045528,
+0.059473,
+0.030233,
+0.028641,
+0.027158,
+0.026436,
+0.025109,
+0.032745,
+0.016905,
+0.016005,
+0.026547,
+0.033395,
+0.015477,
+0.023544,
+0.018700,
+0.032136,
+0.033799,
+0.025221,
+0.040129,
+0.001385,
+0.026925,
+0.014866,
+0.029308,
+0.017356,
+0.014959,
+0.007620,
+0.007338,
+0.020576,
+0.020918,
+0.018980,
+0.022642,
+0.013598,
+0.068225,
+0.062897))
+
+vect2.5 = vect2 + 1
+
+vect3 = vector()
+vect4 = vector()
+for(i in 1:40){
+  x = i
+  y = x + 29
+  vect3 = append(vect3, mean(vect2[x:y]))
+  vect4 = append(vect4, (prod(vect2.5[x:y]))^(1/30)-1)}
+
+geom_vect = vect1 - vect4
+arith_vect = vect1 - vect3
+
+
+vect0 = vector()
+for(i in 0:100){
+  vect0 = append(vect0, paste0("Folio ", i, "/",100-i))
+}
+
+```
+
+
+
+
+
+
+
+
+
+```{r}
+Monthly_Data <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Monthly", range = "B10:D1174")
+
+Monthly_Data[c(2,3)] = 1 + Monthly_Data[c(2,3)] 
+
+# 12-month returns
+for(i in 1:1153){
+  x=i
+  y=x+11
+  Monthly_Data$`Large Cap TR`[i] = prod(Monthly_Data$`Large Cap TR`[x:y])-1
+  Monthly_Data$FIXED[i] = prod(Monthly_Data$FIXED[x:y])-1}
+
+
+Monthly_Data = Monthly_Data[1:1153,]
+
+# 12-month allocation returns
+for(i in 0:100){
+  alpha = i/100
+  Monthly_Data[paste0("Folio", i)] = NA
+  for(j in 1:1153){
+    Monthly_Data[j, i+4] = alpha*Monthly_Data$`Large Cap TR`[j] + (1-alpha)*Monthly_Data$FIXED[j]}}
+
+
+# Annual Allocation returns
+# for(i in 0:100){
+#   alpha = i/100
+#   Data[paste0("Folio", i)] = NA
+#   for(j in 1:97){
+#     Data[j, length(colnames(Data))] = alpha*Data$LCTR_true[j] + (1-alpha)*Data$FIXED_true[j]}}
+
+# Annual from Monthly
+annual = data.frame(matrix(ncol=102,nrow=97))
+colnames(annual) = colnames(Monthly_Data)[c(1, 4:104)]
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    annual[x,] = Monthly_Data[i,c(1,4:104)]
+    x = x + 1}}
+annual$Date = c(seq(1926, 2022, 1))
+
+
+# Mean
+Mean = annual[29:97,]
+colnames(Mean)[2:102] = vect0
+Mean1 = Mean
+Mean1[,2:102] = Mean1[,2:102]+1
+arith = Mean[1:40,]
+# arith mean
+arith[, c(2:102)] = NA
+# arith sharpe
+arith1 = arith
+# arith risk reward ratio
+arith_rrr = arith
+# geom mean
+Geom = arith
+# geom sharpe
+Geom1 = arith
+# geom risk reward ratio
+Geom_rrr = arith
+
+# 30 year arith
+for(i in 0:100){
+  for(j in 1:40){
+    x=j
+    y=x+29
+    arith[j,i+2] = mean(Mean[x:y, i+2])
+    Geom[j,i+2] = (prod(Mean1[x:y, i+2]))^(1/30)-1}}
+
+for(i in 0:100){
+  for(j in 1:40){
+    x=j
+    y=x+29
+    std = sqrt(var(Mean[x:y, i+2]))
+    arith_rrr[j, i+2] = std/arith[j, i+2]
+    arith1[j, i+2] = arith[j, i+2] - arith_vect[j]
+    arith1[j, i+2] = arith1[j, i+2]/std
+    Geom_rrr[j, i+2] = std/Geom[j, i+2]
+    Geom1[j, i+2] = Geom[j, i+2] - geom_vect[j]
+    Geom1[j, i+2] = Geom1[j, i+2]/std}}
+
+total = Mean1
+total[,2:102]=NA
+for(i in 0:100){
+  for(j in 1:40){
+    x=j
+    y=x+29
+    total[j,i+2] = (prod(Mean1[x:y, i+2]))}}
+total = total[1:40,]
+
+stats = data.frame(matrix(nrow=101, ncol = 18))
+colnames(stats) = c("Allocation", "Spread_num", "arith_min", "arith_max", "arith_Mean", "arith_STD_DEV", "arith_Variance", "arith_Sharpe", "arith_RRR", "Geom_min", "Geom_max", "Geom_Mean", "Geom_STD_DEV", "Geom_Variance", "Geom_Sharpe", "Geom_RRR", "Total_Return", "Total_Return_std")
+stats$Spread_num = c(seq(0,100,1))
+Allocation = vector()
+for(i in 0:100){
+  Allocation = append(Allocation, paste0("Large Cap = ", i, "%, Fixed = ", 100-i, "%"))}
+stats$Allocation = c(Allocation)
+
+# Stats
+for(i in 0:100){
+    stats[i+1, 3] = min(arith[, i+2])
+    stats[i+1, 4] = max(arith[, i+2])
+    stats[i+1, 5] = sum(arith[,i+2])
+    stats[i+1, 5] = stats[i+1, 5]/40
+    stats[i+1, 6] = sqrt(var(arith[, i+2]))
+    stats[i+1, 7] = var(arith[, i+2])
+    stats[i+1, 8] = sum(arith1[,i+2])
+    stats[i+1, 8] = stats[i+1, 8]/40
+    stats[i+1, 9] = sum(arith_rrr[,i+2])
+    stats[i+1, 9] = stats[i+1, 9]/40
+    stats[i+1, 10] = min(Geom[, i+2])
+    stats[i+1, 11] = max(Geom[, i+2])
+    stats[i+1, 12] = sum(Geom[,i+2])
+    stats[i+1, 12] = stats[i+1, 12]/40
+    stats[i+1, 13] = sqrt(var(Geom[, i+2]))
+    stats[i+1, 14] = var(Geom[, i+2])
+    stats[i+1, 15] = sum(Geom1[,i+2])
+    stats[i+1, 15] = stats[i+1, 15]/40
+    stats[i+1, 16] = sum(Geom_rrr[,i+2])
+    stats[i+1, 16] = stats[i+1, 16]/40
+    stats[i+1, 17] = sum(total[, i+2])/40
+    stats[i+1, 18] = sqrt(var(total[, i+2]))}
+
+stats = stats %>%
+  mutate("CI" = stats$Total_Return - 1.96 * stats$Total_Return_std)
+
+stats = stats %>%
+  mutate("RRR" = stats$Total_Return/stats$Total_Return_std)
+
+stats$Allocation = factor(stats$Allocation, levels = c(stats$Allocation))
+```
+
+```{r}
+# arith 30-yr average vs std
+signif_pts0 = stats[c(1, 61, 70, 101), ]
+signif_pts0["Rank"] = rank(signif_pts0$arith_STD_DEV)
+signif_pts0["Rank_Color"] = NA
+vect_col = vector()
+for(i in 1:4){
+  if(as.integer(signif_pts0$Rank[i]) == 1){
+    vect_col = append(vect_col, "green")}
+  else{
+    if(as.integer(signif_pts0$Rank[i]) == 2){
+      vect_col = append(vect_col, "yellow")}
+    else{
+      if(as.integer(signif_pts0$Rank[i]) == 3){
+        vect_col = append(vect_col, "orange")}
+      else{
+        vect_col = append(vect_col, "red")}}}}
+signif_pts0$Rank_Color = vect_col
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = arith_STD_DEV, y = arith_Mean)) + 
+  geom_point() +
+  geom_label(data=signif_pts0[3,], aes(x=arith_STD_DEV, y=arith_Mean, 
+                                   label = paste0("mean: ", round(arith_Mean, 4), "\n", "sd: ", round(arith_STD_DEV,4))),
+             color = "darkgreen", size=4, nudge_x = .0002, nudge_y = 0.0001) +
+  geom_point(data = signif_pts0,aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Total Returns") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+```{r}
+# 30 yr arithmetic sharpe ratio
+signif_pts0 = stats[c(1, 31, 61, 101), c(1,2,8)]
+signif_pts0["Rank"] = 5-rank(signif_pts0$arith_Sharpe)
+signif_pts0["Rank_Color"] = NA
+vect_col = vector()
+for(i in 1:4){
+  if(as.integer(signif_pts0$Rank[i]) == 1){
+    vect_col = append(vect_col, "green")}
+  else{
+    if(as.integer(signif_pts0$Rank[i]) == 2){
+      vect_col = append(vect_col, "yellow")}
+    else{
+      if(as.integer(signif_pts0$Rank[i]) == 3){
+        vect_col = append(vect_col, "orange")}
+      else{
+        vect_col = append(vect_col, "red")}}}}
+signif_pts0$Rank_Color = vect_col
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Spread_num, y = arith_Sharpe)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = arith_Sharpe, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", 
+                                                  "Sharpe Ratio: ", round(arith_Sharpe, 4))),
+             color = "darkgreen", size=4, nudge_y = -.025) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Sharpe Ratio") +
+  ylab("Mean") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.4, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+```{r}
+# 30 yr arith risk/reward ratio
+signif_pts0 = stats[c(1, 23, 61, 101),]
+signif_pts0["Rank"] = rank(signif_pts0$arith_RRR)
+signif_pts0["Rank_Color"] = NA
+vect_col = vector()
+for(i in 1:4){
+  if(as.integer(signif_pts0$Rank[i]) == 1){
+    vect_col = append(vect_col, "green")}
+  else{
+    if(as.integer(signif_pts0$Rank[i]) == 2){
+      vect_col = append(vect_col, "yellow")}
+    else{
+      if(as.integer(signif_pts0$Rank[i]) == 3){
+        vect_col = append(vect_col, "orange")}
+      else{
+        vect_col = append(vect_col, "red")}}}}
+signif_pts0$Rank_Color = vect_col
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Spread_num, y = arith_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = arith_RRR, 
+                                   label = paste0("Risk/Reward: ", round(arith_RRR, 4))),
+             color = "darkgreen", size=4, nudge_y = .05) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Risk Reward Ratio") +
+  ylab("Ratio") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.3, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),)
+
+```
+
+
+
+```{r}
+# Geom 30-yr average vs std
+
+signif_pts0 = stats[c(1, 59, 61, 101),]
+signif_pts0["Rank"] = rank(signif_pts0$Geom_STD_DEV)
+signif_pts0["Rank_Color"] = NA
+vect_col = vector()
+for(i in 1:4){
+  if(as.integer(signif_pts0$Rank[i]) == 1){
+    vect_col = append(vect_col, "green")}
+  else{
+    if(as.integer(signif_pts0$Rank[i]) == 2){
+      vect_col = append(vect_col, "yellow")}
+    else{
+      if(as.integer(signif_pts0$Rank[i]) == 3){
+        vect_col = append(vect_col, "orange")}
+      else{
+        vect_col = append(vect_col, "red")}}}}
+signif_pts0$Rank_Color = vect_col
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Geom_STD_DEV, y = Geom_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x=Geom_STD_DEV, y=Geom_Mean, 
+                                   label = paste0("mean: ", round(Geom_Mean, 4), "\n", 
+                                                  "sd: ", round(Geom_STD_DEV, 4))), 
+             color = "darkgreen", size=4, nudge_x = .0002) + 
+  labs(title = "Geometric 30-Year Returns") +
+  ylab("Average") +
+  xlab("Standard Deviation") +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.7, 0.6),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),)
+```
+```{r}
+
+
+# 30 yr geom sharpe ratio 
+
+signif_pts0 = stats[c(1, 30, 61, 101),]
+signif_pts0["Rank"] = 5-rank(signif_pts0$Geom_Sharpe)
+signif_pts0["Rank_Color"] = NA
+vect_col = vector()
+for(i in 1:4){
+  if(as.integer(signif_pts0$Rank[i]) == 1){
+    vect_col = append(vect_col, "green")}
+  else{
+    if(as.integer(signif_pts0$Rank[i]) == 2){
+      vect_col = append(vect_col, "yellow")}
+    else{
+      if(as.integer(signif_pts0$Rank[i]) == 3){
+        vect_col = append(vect_col, "orange")}
+      else{
+        vect_col = append(vect_col, "red")}}}}
+signif_pts0$Rank_Color = vect_col
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Spread_num, y = Geom_Sharpe)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Geom_Sharpe, 
+                                   label = paste0("Sharpe Ratio: ", round(Geom_Sharpe, 4))),
+             color = "darkgreen", size=4, nudge_y = -.025) + 
+  labs(title = "Geometric 30-Year Sharpe Ratio") +
+  ylab("Sharpe Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts0, aes(color = Allocation), size = 5) +
+  scale_color_manual(values = col_pal)+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.4, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),)
+
+```
+```{r}
+# 30 yr geometric risk/reward ratio 
+
+signif_pts0 = stats[c(1, 23, 61, 101),]
+signif_pts0["Rank"] = rank(signif_pts0$Geom_RRR)
+signif_pts0["Rank_Color"] = NA
+vect_col = vector()
+for(i in 1:4){
+  if(as.integer(signif_pts0$Rank[i]) == 1){
+    vect_col = append(vect_col, "green")}
+  else{
+    if(as.integer(signif_pts0$Rank[i]) == 2){
+      vect_col = append(vect_col, "yellow")}
+    else{
+      if(as.integer(signif_pts0$Rank[i]) == 3){
+        vect_col = append(vect_col, "orange")}
+      else{
+        vect_col = append(vect_col, "red")}}}}
+signif_pts0$Rank_Color = vect_col
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Spread_num, y = Geom_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Geom_RRR, 
+                                   label = paste0("Risk/Reward: ", round(Geom_RRR, 4))),
+             color = "darkgreen", size=4, nudge_y = .05) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Risk Reward Ratio") +
+  ylab("Ratio") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.3, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),)
+
+```
+
+
+
+
+```{r}
+# Mean_3 = Monthly_Data[,c(1, seq(6,306,3))]
+# colnames(Mean_3)[2:102] = vect0
+# Mean1_3 = Mean_3
+# Mean1_3[,2:102] = Mean1_3[,2:102]+1
+# arith_3 = Mean_3
+# # arith mean
+# arith_3[, c(2:102)] = NA
+# # geom mean
+# Geom_3 = arith_3
+# 
+# # 30 year arith
+# for(i in 0:100){
+#   for(j in 1:794){
+#     x=j
+#     y=x+359
+#     arith_3[j,i+2] = sum(Mean_3[x:y, i+2])/360
+#     Geom_3[j,i+2] = (prod(Mean1_3[x:y, i+2]))^(1/360)-1}}
+# arith_3 = arith_3[1:794,]
+# Geom_3 = Geom_3[1:794,]
+# 
+# # arith sharpe
+# arith_Sharpe_3 = arith_3
+# arith_Sharpe_3[,2:102] = NA
+# arith_Sharpe_3_with = arith_Sharpe_3
+# arith_Sharpe_3_without = arith_Sharpe_3
+# # arith risk reward ratio
+# arith_rrr_3 = arith_Sharpe_3
+# # geom sharpe
+# Geom_Sharpe_3 = arith_Sharpe_3
+# Geom_Sharpe_3_with = Geom_Sharpe_3
+# Geom_Sharpe_3_without = Geom_Sharpe_3
+# # geom risk reward ratio
+# Geom_rrr_3 = arith_Sharpe_3
+# RRR_3 = arith_3
+# RRR_3[,2:102]=NA
+# STD_3 = RRR_3
+
+
+
+# for(i in 0:100){
+#   for(j in 1:794){
+#     x=j
+#     y=x+359
+#     STD_3[j,i+2] = sqrt(var(Mean_3[x:y, i+2]))
+#     frame = Mean_3[x:y, i+2]
+#     count_reward = length(frame[frame>0])/360
+#     count_risk = length(frame[frame<0])/360
+#     reward = sum(frame[frame>0])
+#     risk = sum(frame[frame<0])
+#     RRR_3[j,i+2] = count_reward*reward + count_risk*risk
+#     arith_rrr_3[j, i+2] = STD_3[j, i+2]/arith_3[j, i+2]
+#     arith_Sharpe_3_without[j, i+2] = arith_3[j, i+2] - IB_Monthly_a$diff[j]
+#     arith_Sharpe_3_with[j, i+2] = arith_Sharpe_3_without[j, i+2]/STD_3[j, i+2]
+#     Geom_rrr_3[j, i+2] = STD_3[j, i+2]/Geom_3[j, i+2]
+#     Geom_Sharpe_3_without[j, i+2] = Geom_3[j, i+2] - IB_Monthly_g$diff[j]
+#     Geom_Sharpe_3_with[j, i+2] = Geom_Sharpe_3_without[j, i+2]/STD_3[j, i+2]}}
+
+
+# STD_3 = STD_3[1:794,]
+# write.csv(STD_3, "STD_3.csv", row.names=FALSE, quote=FALSE)
+# RRR_3 = RRR_3[1:794,]
+# write.csv(RRR_3, "RRR_3.csv", row.names=FALSE, quote=FALSE)
+# arith_rrr_3 = arith_rrr_3[1:794,]
+# write.csv(arith_rrr_3, "arith_rrr_3.csv", row.names=FALSE, quote=FALSE)
+# arith_Sharpe_3_with = arith_Sharpe_3_with[1:794,]
+# write.csv(arith_Sharpe_3_with, "arith_Sharpe_3_with.csv", row.names=FALSE, quote=FALSE)
+# arith_Sharpe_3_without = arith_Sharpe_3_without[1:794,]
+# write.csv(arith_Sharpe_3_without, "arith_Sharpe_3_without.csv", row.names=FALSE, quote=FALSE)
+# arith_3 = arith_3[1:794,]
+# write.csv(arith_3, "arith_3.csv", row.names=FALSE, quote=FALSE)
+# Geom_rrr_3 = Geom_rrr_3[1:794,]
+# write.csv(Geom_rrr_3, "Geom_rrr_3.csv", row.names=FALSE, quote=FALSE)
+# Geom_Sharpe_3_with = Geom_Sharpe_3_with[1:794,]
+# write.csv(Geom_Sharpe_3_with, "Geom_Sharpe_3_with.csv", row.names=FALSE, quote=FALSE)
+# Geom_Sharpe_3_without = Geom_Sharpe_3_without[1:794,]
+# write.csv(Geom_Sharpe_3_without, "Geom_Sharpe_3_without.csv", row.names=FALSE, quote=FALSE)
+# Geom_3 = Geom_3[1:794,]
+# write.csv(Geom_3, "Geom_3.csv", row.names=FALSE, quote=FALSE)
+# write.csv(Mean_3, "Mean_3.csv", row.names=FALSE, quote=FALSE)
+# write.csv(Mean1_3, "Mean1_3.csv", row.names=FALSE, quote=FALSE)
+```
+
+
+```{r}
+
+Mean_3 = read.csv("Mean_3.csv")
+Mean1_3 = read.csv("Mean1_3.csv")
+STD_3 = read.csv("STD_3.csv")
+RRR_3 = read.csv("RRR_3.csv")
+arith_rrr_3 = read.csv("arith_rrr_3.csv")
+arith_Sharpe_3_with = read.csv("arith_Sharpe_3_with.csv")
+arith_Sharpe_3_without = read.csv("arith_Sharpe_3_without.csv")
+arith_3 = read.csv("arith_3.csv")
+Geom_rrr_3 = read.csv("Geom_rrr_3.csv")
+Geom_Sharpe_3_with = read.csv("Geom_Sharpe_3_with.csv")
+Geom_Sharpe_3_without = read.csv("Geom_Sharpe_3_without.csv")
+Geom_3 = read.csv("Geom_3.csv")
+
+RRR_3_Yearly = RRR_3
+RRR_3_Yearly[,2:102] = (RRR_3_Yearly[,2:102])^(1/30)-1
+
+# Yearly_STD_3
+Yearly_STD_3 = STD_3[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_STD_3[x,] = STD_3[i,]
+    x = x + 1}}
+Yearly_STD_3$Date = Data$Date[1:67]
+
+
+# Yearly_Mean_3
+Yearly_Mean_3 = Mean_3[1:97,]
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_Mean_3[x,] = Mean_3[i,]
+    x = x + 1}}
+Yearly_Mean_3$Date = Data$Date
+
+
+# Yearly_Mean1_3
+Yearly_Mean1_3 = Mean1_3[1:97,]
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_Mean1_3[x,] = Mean1_3[i,]
+    x = x + 1}}
+Yearly_Mean1_3$Date = Data$Date
+
+
+# Yearly_RRR_3
+Yearly_RRR_3 = RRR_3[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_RRR_3[x,] = RRR_3[i,]
+    x = x + 1}}
+Yearly_RRR_3$Date = Data$Date[1:67]
+
+
+# Yearly_arith_rrr_3
+Yearly_arith_rrr_3 = arith_rrr_3[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_arith_rrr_3[x,] = arith_rrr_3[i,]
+    x = x + 1}}
+Yearly_arith_rrr_3$Date = Data$Date[1:67]
+
+
+# Yearly_arith_Sharpe_3_with
+Yearly_arith_Sharpe_3_with = arith_Sharpe_3_with[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_arith_Sharpe_3_with[x,] = arith_Sharpe_3_with[i,]
+    x = x + 1}}
+Yearly_arith_Sharpe_3_with$Date = Data$Date[1:67]
+
+
+# Yearly_arith_Sharpe_3_without
+Yearly_arith_Sharpe_3_without = arith_Sharpe_3_without[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_arith_Sharpe_3_without[x,] = arith_Sharpe_3_without[i,]
+    x = x + 1}}
+Yearly_arith_Sharpe_3_without$Date = Data$Date[1:67]
+
+
+# Yearly_arith_3
+Yearly_arith_3 = arith_3[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_arith_3[x,] = arith_3[i,]
+    x = x + 1}}
+Yearly_arith_3$Date = Data$Date[1:67]
+
+
+# Yearly_Geom_rrr_3
+Yearly_Geom_rrr_3 = Geom_rrr_3[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_Geom_rrr_3[x,] = Geom_rrr_3[i,]
+    x = x + 1}}
+Yearly_Geom_rrr_3$Date = Data$Date[1:67]
+
+
+# Yearly_Geom_Sharpe_3_with
+Yearly_Geom_Sharpe_3_with = Geom_Sharpe_3_with[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_Geom_Sharpe_3_with[x,] = Geom_Sharpe_3_with[i,]
+    x = x + 1}}
+Yearly_Geom_Sharpe_3_with$Date = Data$Date[1:67]
+
+
+# Yearly_Geom_Sharpe_3_without
+Yearly_Geom_Sharpe_3_without = Geom_Sharpe_3_without[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_Geom_Sharpe_3_without[x,] = Geom_Sharpe_3_without[i,]
+    x = x + 1}}
+Yearly_Geom_Sharpe_3_without$Date = Data$Date[1:67]
+
+
+# Yearly_Geom_3
+Yearly_Geom_3 = Geom_3[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_Geom_3[x,] = Geom_3[i,]
+    x = x + 1}}
+Yearly_Geom_3$Date = Data$Date[1:67]
+
+Yearly_RRR_3_Yearly = RRR_3_Yearly[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_RRR_3_Yearly[x,] = RRR_3_Yearly[i,]
+    x = x + 1}}
+Yearly_RRR_3_Yearly$Date = Data$Date[1:67]
+
+```
+
+
+```{r}
+# Monthly 
+
+stats_3 = data.frame(matrix(nrow=101, ncol = 15))
+colnames(stats_3) = c("Allocation", "Spread_num", "STD_DEV", "RRR_mean", "RRR_std", "Annual_RRR_mean", "Annual_RRR_std", "arith_Mean", "arith_STD_DEV", "arith_Sharpe_with", "arith_Sharpe_without", "Geom_Mean", "Geom_STD_DEV", "Geom_Sharpe_with", "Geom_Sharpe_without")
+stats_3$Allocation = c(vect0)
+stats_3$Spread_num = c(seq(0,100,1))
+
+# Stats
+for(i in 0:100){
+  stats_3$STD_DEV[i+1] = sum(STD_3[, i+2])/794
+  stats_3$RRR_mean[i+1] = sum(RRR_3[, i+2])/794
+  stats_3$RRR_std[i+1] = sqrt(var(RRR_3[, i+2]))
+  stats_3$Annual_RRR_mean[i+1] = sum(RRR_3_Yearly[, i+2])/794
+  stats_3$Annual_RRR_std[i+1] = sqrt(var(RRR_3_Yearly[, i+2]))
+  stats_3$arith_Mean[i+1] = sum(arith_3[,i+2])/794
+  stats_3$arith_STD_DEV[i+1] = sqrt(var(arith_3[, i+2]))
+  stats_3$arith_Sharpe_with[i+1] = sum(arith_Sharpe_3_without[, i+2])/794
+  stats_3$arith_Sharpe_without[i+1] = sum(arith_Sharpe_3_without[, i+2])/794
+  stats_3$arith_Sharpe_without[i+1] = stats_3$arith_Sharpe_without[i+1] / stats_3$arith_STD_DEV[i+1]
+  stats_3$Geom_Mean[i+1] = sum(Geom_3[,i+2])/794
+  stats_3$Geom_STD_DEV[i+1] = sqrt(var(Geom_3[, i+2]))
+  stats_3$Geom_Sharpe_with[i+1] = sum(Geom_Sharpe_3_with[, i+2])/794
+  stats_3$Geom_Sharpe_without[i+1] = sum(Geom_Sharpe_3_without[, i+2])/794
+  stats_3$Geom_Sharpe_without[i+1] = stats_3$Geom_Sharpe_without[i+1] / stats_3$Geom_STD_DEV[i+1]}
+
+write.csv(stats_3, "stats_3.csv", row.names=FALSE, quote=FALSE)
+stats_3 = read.csv("stats_3.csv")
+
+
+
+# Yearly
+
+Yearly_stats_3 = data.frame(matrix(nrow=101, ncol = 15))
+colnames(Yearly_stats_3) = c("Allocation", "Spread_num", "STD_DEV", "RRR_mean", "RRR_std", "Annual_RRR_mean", "Annual_RRR_std", "arith_Mean", "arith_STD_DEV", "arith_Sharpe_with", "arith_Sharpe_without", "Geom_Mean", "Geom_STD_DEV", "Geom_Sharpe_with", "Geom_Sharpe_without")
+Yearly_stats_3$Allocation = c(vect0)
+Yearly_stats_3$Spread_num = c(seq(0,100,1))
+
+# Stats
+for(i in 0:100){
+  Yearly_stats_3$STD_DEV[i+1] = sum(Yearly_STD_3[, i+2])/67
+  Yearly_stats_3$RRR_mean[i+1] = sum(Yearly_RRR_3[, i+2])/67
+  Yearly_stats_3$RRR_std[i+1] = sqrt(var(Yearly_RRR_3[, i+2]))
+  Yearly_stats_3$Annual_RRR_mean[i+1] = sum(Yearly_RRR_3_Yearly[, i+2])/67
+  Yearly_stats_3$Annual_RRR_std[i+1] = sqrt(var(Yearly_RRR_3_Yearly[, i+2]))
+  Yearly_stats_3$arith_Mean[i+1] = sum(Yearly_arith_3[,i+2])/67
+  Yearly_stats_3$arith_STD_DEV[i+1] = sqrt(var(Yearly_arith_3[, i+2]))
+  Yearly_stats_3$arith_Sharpe_with[i+1] = sum(Yearly_arith_Sharpe_3_without[, i+2])/67
+  Yearly_stats_3$arith_Sharpe_without[i+1] = sum(Yearly_arith_Sharpe_3_without[, i+2])/67
+  Yearly_stats_3$arith_Sharpe_without[i+1] = Yearly_stats_3$arith_Sharpe_without[i+1] / Yearly_stats_3$arith_STD_DEV[i+1]
+  Yearly_stats_3$Geom_Mean[i+1] = sum(Yearly_Geom_3[,i+2])/67
+  Yearly_stats_3$Geom_STD_DEV[i+1] = sqrt(var(Yearly_Geom_3[, i+2]))
+  Yearly_stats_3$Geom_Sharpe_with[i+1] = sum(Yearly_Geom_Sharpe_3_with[, i+2])/67
+  Yearly_stats_3$Geom_Sharpe_without[i+1] = sum(Yearly_Geom_Sharpe_3_without[, i+2])/67
+  Yearly_stats_3$Geom_Sharpe_without[i+1] = Yearly_stats_3$Geom_Sharpe_without[i+1] / Yearly_stats_3$Geom_STD_DEV[i+1]}
+
+write.csv(Yearly_stats_3, "Yearly_stats_3.csv", row.names=FALSE, quote=FALSE)
+Yearly_stats_3 = read.csv("Yearly_stats_3.csv")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+Mean_3a = Monthly_Data1[,c(1, seq(6,306,3))]
+colnames(Mean_3a)[2:102] = vect0
+Mean1_3a = Mean_3a
+Mean1_3a[,2:102] = Mean1_3a[,2:102]+1
+arith_3a = Mean_3a
+# arith mean
+arith_3a[, c(2:102)] = NA
+# geom mean
+Geom_3a = arith_3a
+
+# 30 year arith
+for(i in 0:100){
+  for(j in 1:805){
+    x=j
+    y=x+359
+    arith_3a[j,i+2] = sum(Mean_3a[x:y, i+2])/360
+    Geom_3a[j,i+2] = (prod(Mean1_3a[x:y, i+2]))^(1/360)-1}}
+arith_3a = arith_3a[1:794,]
+Geom_3a = Geom_3a[1:794,]
+
+# arith sharpe
+arith_Sharpe_3a = arith_3a
+arith_Sharpe_3a[,2:102] = NA
+arith_Sharpe_3a_with = arith_Sharpe_3a
+arith_Sharpe_3a_without = arith_Sharpe_3a
+# arith risk reward ratio
+arith_rrr_3a = arith_Sharpe_3a
+# geom sharpe
+Geom_Sharpe_3a = arith_Sharpe_3a
+Geom_Sharpe_3a_with = Geom_Sharpe_3a
+Geom_Sharpe_3a_without = Geom_Sharpe_3a
+# geom risk reward ratio
+Geom_rrr_3a = arith_Sharpe_3a
+RRR_3a = arith_3a
+RRR_3a[,2:102]=NA
+STD_3a = RRR_3a
+
+IB <- read_excel("Project 2 Historical Data.xlsx",
+    range = "AO11:AR1175", col_types = c("numeric",
+        "skip", "skip", "numeric"))
+IB["Date"] = NA
+IB$Date = Monthly_Data1$Date
+IB = IB[,c(3,1:2)]
+
+IB_x = IB
+IB_x[,2:3] = 1 + IB_x[,2:3]
+IB_Monthly = IB
+IB_Monthly = IB_Monthly[1:1153,]
+IB_Monthly[,2:3]=NA
+
+for(j in 2:3){
+  for(i in 1:1153){
+    x=i
+    y=x+11
+    IB_Monthly[i,j] = prod(IB_x[x:y, j])-1}}
+
+IB_Monthly_1a = IB_Monthly
+IB_Monthly_1g = IB_Monthly
+IB_Monthly_1g[,2:3] = 1 + IB_Monthly_1g[,2:3]
+IB_Monthly_a = IB_Monthly_1a
+IB_Monthly_a[,2:3] = NA
+IB_Monthly_g = IB_Monthly_1g
+IB_Monthly_g[,2:3] = NA
+
+for(j in 2:3){
+  for(i in 1:794){
+    x=i
+    y=x+359
+    IB_Monthly_g[i,j] = prod(IB_Monthly_1g[x:y, j])^(1/360)-1
+    IB_Monthly_a[i,j] = sum(IB_Monthly_1a[x:y, j])/360}}
+
+IB_Monthly_g["diff"] = IB_Monthly_g$`Ibbotson® SBBI® US (30-Day) Treasury Bills`-IB_Monthly_g$`Ibbotson® SBBI® US Inflation`
+IB_Monthly_a["diff"] = IB_Monthly_a$`Ibbotson® SBBI® US (30-Day) Treasury Bills`-IB_Monthly_a$`Ibbotson® SBBI® US Inflation`
+
+
+
+for(i in 0:100){
+  for(j in 1:794){
+    x=j
+    y=x+359
+    STD_3a[j,i+2] = sqrt(var(Mean_3a[x:y, i+2]))
+    frame = Mean_3a[x:y, i+2]
+    count_reward = length(frame[frame>0])/360
+    count_risk = length(frame[frame<0])/360
+    reward = sum(frame[frame>0])
+    risk = sum(frame[frame<0])
+    RRR_3a[j,i+2] = count_reward*reward + count_risk*risk
+    arith_rrr_3a[j, i+2] = STD_3a[j, i+2]/arith_3a[j, i+2]
+    arith_Sharpe_3a_without[j, i+2] = arith_3a[j, i+2] - IB_Monthly_a$diff[j]
+    arith_Sharpe_3a_with[j, i+2] = arith_Sharpe_3a_without[j, i+2]/STD_3a[j, i+2]
+    Geom_rrr_3a[j, i+2] = STD_3a[j, i+2]/Geom_3a[j, i+2]
+    Geom_Sharpe_3a_without[j, i+2] = Geom_3a[j, i+2] - IB_Monthly_g$diff[j]
+    Geom_Sharpe_3a_with[j, i+2] = Geom_Sharpe_3a_without[j, i+2]/STD_3a[j, i+2]}}
+
+
+STD_3a = STD_3a[1:794,]
+write.csv(STD_3a, "STD_3a.csv", row.names=FALSE, quote=FALSE)
+RRR_3a = RRR_3a[1:794,]
+write.csv(RRR_3a, "RRR_3a.csv", row.names=FALSE, quote=FALSE)
+arith_rrr_3a = arith_rrr_3a[1:794,]
+write.csv(arith_rrr_3a, "arith_rrr_3a.csv", row.names=FALSE, quote=FALSE)
+arith_Sharpe_3a_with = arith_Sharpe_3a_with[1:794,]
+write.csv(arith_Sharpe_3a_with, "arith_Sharpe_3a_with.csv", row.names=FALSE, quote=FALSE)
+arith_Sharpe_3a_without = arith_Sharpe_3a_without[1:794,]
+write.csv(arith_Sharpe_3a_without, "arith_Sharpe_3a_without.csv", row.names=FALSE, quote=FALSE)
+arith_3a = arith_3a[1:794,]
+write.csv(arith_3a, "arith_3a.csv", row.names=FALSE, quote=FALSE)
+Geom_rrr_3a = Geom_rrr_3a[1:794,]
+write.csv(Geom_rrr_3a, "Geom_rrr_3a.csv", row.names=FALSE, quote=FALSE)
+Geom_Sharpe_3a_with = Geom_Sharpe_3a_with[1:794,]
+write.csv(Geom_Sharpe_3a_with, "Geom_Sharpe_3a_with.csv", row.names=FALSE, quote=FALSE)
+Geom_Sharpe_3a_without = Geom_Sharpe_3a_without[1:794,]
+write.csv(Geom_Sharpe_3a_without, "Geom_Sharpe_3a_without.csv", row.names=FALSE, quote=FALSE)
+Geom_3a = Geom_3a[1:794,]
+write.csv(Geom_3a, "Geom_3a.csv", row.names=FALSE, quote=FALSE)
+write.csv(Mean_3a, "Mean_3a.csv", row.names=FALSE, quote=FALSE)
+write.csv(Mean1_3a, "Mean1_3a.csv", row.names=FALSE, quote=FALSE)
+```
+
+
+```{r}
+
+Mean_3a = read.csv("Mean_3a.csv")
+Mean1_3a = read.csv("Mean1_3a.csv")
+STD_3a = read.csv("STD_3a.csv")
+RRR_3a = read.csv("RRR_3a.csv")
+arith_rrr_3a = read.csv("arith_rrr_3a.csv")
+arith_Sharpe_3a_with = read.csv("arith_Sharpe_3a_with.csv")
+arith_Sharpe_3a_without = read.csv("arith_Sharpe_3a_without.csv")
+arith_3a = read.csv("arith_3a.csv")
+Geom_rrr_3a = read.csv("Geom_rrr_3a.csv")
+Geom_Sharpe_3a_with = read.csv("Geom_Sharpe_3a_with.csv")
+Geom_Sharpe_3a_without = read.csv("Geom_Sharpe_3a_without.csv")
+Geom_3a = read.csv("Geom_3a.csv")
+
+RRR_3a_Yearly = RRR_3a
+RRR_3a_Yearly[,2:102] = (RRR_3a_Yearly[,2:102])^(1/30)-1
+
+# Yearly_STD_3a
+Yearly_STD_3a = STD_3a[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_STD_3a[x,] = STD_3a[i,]
+    x = x + 1}}
+Yearly_STD_3a$Date = Data$Date[1:67]
+
+
+# Yearly_Mean_3a
+Yearly_Mean_3a = Mean_3a[1:97,]
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_Mean_3a[x,] = Mean_3a[i,]
+    x = x + 1}}
+Yearly_Mean_3a$Date = Data$Date
+
+
+# Yearly_Mean1_3a
+Yearly_Mean1_3a = Mean1_3a[1:97,]
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_Mean1_3a[x,] = Mean1_3a[i,]
+    x = x + 1}}
+Yearly_Mean1_3a$Date = Data$Date
+
+
+# Yearly_RRR_3a
+Yearly_RRR_3a = RRR_3a[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_RRR_3a[x,] = RRR_3a[i,]
+    x = x + 1}}
+Yearly_RRR_3a$Date = Data$Date[1:67]
+
+
+# Yearly_arith_rrr_3a
+Yearly_arith_rrr_3a = arith_rrr_3a[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_arith_rrr_3a[x,] = arith_rrr_3a[i,]
+    x = x + 1}}
+Yearly_arith_rrr_3a$Date = Data$Date[1:67]
+
+
+# Yearly_arith_Sharpe_3a_with
+Yearly_arith_Sharpe_3a_with = arith_Sharpe_3a_with[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_arith_Sharpe_3a_with[x,] = arith_Sharpe_3a_with[i,]
+    x = x + 1}}
+Yearly_arith_Sharpe_3a_with$Date = Data$Date[1:67]
+
+
+# Yearly_arith_Sharpe_3a_without
+Yearly_arith_Sharpe_3a_without = arith_Sharpe_3a_without[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_arith_Sharpe_3a_without[x,] = arith_Sharpe_3a_without[i,]
+    x = x + 1}}
+Yearly_arith_Sharpe_3a_without$Date = Data$Date[1:67]
+
+
+# Yearly_arith_3a
+Yearly_arith_3a = arith_3a[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_arith_3a[x,] = arith_3a[i,]
+    x = x + 1}}
+Yearly_arith_3a$Date = Data$Date[1:67]
+
+
+# Yearly_Geom_rrr_3a
+Yearly_Geom_rrr_3a = Geom_rrr_3a[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_Geom_rrr_3a[x,] = Geom_rrr_3a[i,]
+    x = x + 1}}
+Yearly_Geom_rrr_3a$Date = Data$Date[1:67]
+
+
+# Yearly_Geom_Sharpe_3a_with
+Yearly_Geom_Sharpe_3a_with = Geom_Sharpe_3a_with[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_Geom_Sharpe_3a_with[x,] = Geom_Sharpe_3a_with[i,]
+    x = x + 1}}
+Yearly_Geom_Sharpe_3a_with$Date = Data$Date[1:67]
+
+
+# Yearly_Geom_Sharpe_3a_without
+Yearly_Geom_Sharpe_3a_without = Geom_Sharpe_3a_without[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_Geom_Sharpe_3a_without[x,] = Geom_Sharpe_3a_without[i,]
+    x = x + 1}}
+Yearly_Geom_Sharpe_3a_without$Date = Data$Date[1:67]
+
+
+# Yearly_Geom_3a
+Yearly_Geom_3a = Geom_3a[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_Geom_3a[x,] = Geom_3a[i,]
+    x = x + 1}}
+Yearly_Geom_3a$Date = Data$Date[1:67]
+
+Yearly_RRR_3a_Yearly = RRR_3a_Yearly[1:67,]
+x=1
+for(i in 1:794){
+  if((i-1)%%12 ==0){
+    Yearly_RRR_3a_Yearly[x,] = RRR_3a_Yearly[i,]
+    x = x + 1}}
+Yearly_RRR_3a_Yearly$Date = Data$Date[1:67]
+
+```
+
+
+```{r}
+# Monthly 
+
+stats_3a = data.frame(matrix(nrow=101, ncol = 15))
+colnames(stats_3a) = c("Allocation", "Spread_num", "STD_DEV", "RRR_mean", "RRR_std", "Annual_RRR_mean", "Annual_RRR_std", "arith_Mean", "arith_STD_DEV", "arith_Sharpe_with", "arith_Sharpe_without", "Geom_Mean", "Geom_STD_DEV", "Geom_Sharpe_with", "Geom_Sharpe_without")
+stats_3a$Allocation = c(vect0)
+stats_3a$Spread_num = c(seq(0,100,1))
+
+# Stats
+for(i in 0:100){
+  stats_3a$STD_DEV[i+1] = sum(STD_3a[, i+2])/794
+  stats_3a$RRR_mean[i+1] = sum(RRR_3a[, i+2])/794
+  stats_3a$RRR_std[i+1] = sqrt(var(RRR_3a[, i+2]))
+  stats_3a$Annual_RRR_mean[i+1] = sum(RRR_3a_Yearly[, i+2])/794
+  stats_3a$Annual_RRR_std[i+1] = sqrt(var(RRR_3a_Yearly[, i+2]))
+  stats_3a$arith_Mean[i+1] = sum(arith_3a[,i+2])/794
+  stats_3a$arith_STD_DEV[i+1] = sqrt(var(arith_3a[, i+2]))
+  stats_3a$arith_Sharpe_with[i+1] = sum(arith_Sharpe_3a_without[, i+2])/794
+  stats_3a$arith_Sharpe_without[i+1] = sum(arith_Sharpe_3a_without[, i+2])/794
+  stats_3a$arith_Sharpe_without[i+1] = stats_3a$arith_Sharpe_without[i+1] / stats_3a$arith_STD_DEV[i+1]
+  stats_3a$Geom_Mean[i+1] = sum(Geom_3a[,i+2])/794
+  stats_3a$Geom_STD_DEV[i+1] = sqrt(var(Geom_3a[, i+2]))
+  stats_3a$Geom_Sharpe_with[i+1] = sum(Geom_Sharpe_3a_with[, i+2])/794
+  stats_3a$Geom_Sharpe_without[i+1] = sum(Geom_Sharpe_3a_without[, i+2])/794
+  stats_3a$Geom_Sharpe_without[i+1] = stats_3a$Geom_Sharpe_without[i+1] / stats_3a$Geom_STD_DEV[i+1]}
+
+write.csv(stats_3a, "stats_3a.csv", row.names=FALSE, quote=FALSE)
+stats_3a = read.csv("stats_3a.csv")
+
+
+
+# Yearly
+
+Yearly_stats_3a = data.frame(matrix(nrow=101, ncol = 15))
+colnames(Yearly_stats_3a) = c("Allocation", "Spread_num", "STD_DEV", "RRR_mean", "RRR_std", "Annual_RRR_mean", "Annual_RRR_std", "arith_Mean", "arith_STD_DEV", "arith_Sharpe_with", "arith_Sharpe_without", "Geom_Mean", "Geom_STD_DEV", "Geom_Sharpe_with", "Geom_Sharpe_without")
+Yearly_stats_3a$Allocation = c(vect0)
+Yearly_stats_3a$Spread_num = c(seq(0,100,1))
+
+# Stats
+for(i in 0:100){
+  Yearly_stats_3a$STD_DEV[i+1] = sum(Yearly_STD_3a[, i+2])/67
+  Yearly_stats_3a$RRR_mean[i+1] = sum(Yearly_RRR_3a[, i+2])/67
+  Yearly_stats_3a$RRR_std[i+1] = sqrt(var(Yearly_RRR_3a[, i+2]))
+  Yearly_stats_3a$Annual_RRR_mean[i+1] = sum(Yearly_RRR_3a_Yearly[, i+2])/67
+  Yearly_stats_3a$Annual_RRR_std[i+1] = sqrt(var(Yearly_RRR_3a_Yearly[, i+2]))
+  Yearly_stats_3a$arith_Mean[i+1] = sum(Yearly_arith_3a[,i+2])/67
+  Yearly_stats_3a$arith_STD_DEV[i+1] = sqrt(var(Yearly_arith_3a[, i+2]))
+  Yearly_stats_3a$arith_Sharpe_with[i+1] = sum(Yearly_arith_Sharpe_3a_without[, i+2])/67
+  Yearly_stats_3a$arith_Sharpe_without[i+1] = sum(Yearly_arith_Sharpe_3a_without[, i+2])/67
+  Yearly_stats_3a$arith_Sharpe_without[i+1] = Yearly_stats_3a$arith_Sharpe_without[i+1] / Yearly_stats_3a$arith_STD_DEV[i+1]
+  Yearly_stats_3a$Geom_Mean[i+1] = sum(Yearly_Geom_3a[,i+2])/67
+  Yearly_stats_3a$Geom_STD_DEV[i+1] = sqrt(var(Yearly_Geom_3a[, i+2]))
+  Yearly_stats_3a$Geom_Sharpe_with[i+1] = sum(Yearly_Geom_Sharpe_3a_with[, i+2])/67
+  Yearly_stats_3a$Geom_Sharpe_without[i+1] = sum(Yearly_Geom_Sharpe_3a_without[, i+2])/67
+  Yearly_stats_3a$Geom_Sharpe_without[i+1] = Yearly_stats_3a$Geom_Sharpe_without[i+1] / Yearly_stats_3a$Geom_STD_DEV[i+1]}
+
+write.csv(Yearly_stats_3a, "Yearly_stats_3a.csv", row.names=FALSE, quote=FALSE)
+Yearly_stats_3a = read.csv("Yearly_stats_3a.csv")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+# arith 30-yr average vs std
+signif_pts0 = stats[c(1, 61, 70, 101),]
+ggplot(data = stats, aes(x = arith_STD_DEV, y = arith_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x=arith_STD_DEV, y=arith_Mean, 
+                                   label = paste0("mean: ", round(arith_Mean,4), "\n", "sd: ", round(arith_STD_DEV,4))),
+             color = "green", size=4, nudge_x = .0002, nudge_y = 0.0001) +
+  geom_point(data=signif_pts0[1,], aes(x=arith_STD_DEV, y=arith_Mean), color = "red", size = 5) +
+  geom_point(data=signif_pts0[2,], aes(x=arith_STD_DEV, y=arith_Mean), color = "yellow", size = 5) +
+  geom_point(data=signif_pts0[3,], aes(x=arith_STD_DEV, y=arith_Mean), color = "green", size = 5) +
+  geom_point(data=signif_pts0[4,], aes(x=arith_STD_DEV, y=arith_Mean), color = "orange", size = 5) +
+  geom_point(data=signif_pts0[5,], aes(x=arith_STD_DEV, y=arith_Mean, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "red", "60/40" = "yellow", "69/31" = "green", "100/0" = "orange"),
+                     labels = c("0/100", "60/40", "69/31", "100/0"))+
+  labs(title = "arithmetic 30-Year Returns") +
+  ylab("Average") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# 30 yr arithmetic sharpe ratio
+signif_pts1 = stats[c(1, 31, 61, 101),]
+ggplot(data = stats, aes(x = Spread_num, y = arith_Sharpe)) + 
+  geom_point() + 
+  geom_label(data=signif_pts1[2,], aes(x = Spread_num, y = arith_Sharpe, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", 
+                                                  "Sharpe Ratio: ", round(arith_Sharpe, 4))),
+             color = "green", size=4, nudge_y = -.025) + 
+  geom_point(data=signif_pts1, aes(x = Spread_num, y = arith_Sharpe), color = "red", size = 4) +
+  labs(title = "arithmetic 30-Year Sharpe Ratio") +
+  ylab("Sharpe Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts1[1,], aes(x = Spread_num, y = arith_Sharpe), color = "orange", size = 5) +
+  geom_point(data=signif_pts1[2,], aes(x = Spread_num, y = arith_Sharpe), color = "green", size = 5) +
+  geom_point(data=signif_pts1[3,], aes(x = Spread_num, y = arith_Sharpe), color = "yellow", size = 5) +
+  geom_point(data=signif_pts1[4,], aes(x = Spread_num, y = arith_Sharpe), color = "red", size = 5) +
+  geom_point(data=signif_pts1[5,], aes(x = Spread_num, y = arith_Sharpe, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "orange", "30/70" = "green", "60/40" = "yellow", "100/0" = "red"),
+                     labels = c("0/100", "30/70", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# 30 yr arith risk/reward ratio
+signif_pts2 = stats[c(1, 23, 61, 101),]
+ggplot(data = stats, aes(x = Spread_num, y = arith_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts2[2,], aes(x = Spread_num, y = arith_RRR, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", 
+                                                  "Risk/Reward: ", round(arith_RRR, 4))),
+             color = "green", size=4, nudge_y = .05) + 
+  labs(title = "arithmetic 30-Year Risk/Reward Ratio") +
+  ylab("Risk/Reward Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts2[1,], aes(x = Spread_num, y = arith_RRR), color = "orange", size = 5) +
+  geom_point(data=signif_pts2[2,], aes(x = Spread_num, y = arith_RRR), color = "green", size = 5) +
+  geom_point(data=signif_pts2[3,], aes(x = Spread_num, y = arith_RRR), color = "yellow", size = 5) +
+  geom_point(data=signif_pts2[4,], aes(x = Spread_num, y = arith_RRR), color = "red", size = 5) +
+  geom_point(data=signif_pts2[5,], aes(x = Spread_num, y = arith_RRR, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "orange", "22/78" = "green", "60/40" = "yellow", "100/0" = "red"),
+                     labels = c("0/100", "22/78", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.85, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# Geom 30-yr average vs std
+signif_pts3 = stats[c(1, 59, 61, 101),]
+ggplot(data = stats, aes(x = Geom_STD_DEV, y = Geom_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts3[2,], aes(x=Geom_STD_DEV, y=Geom_Mean, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", 
+                                                  "mean: ", round(Geom_Mean, 4), "\n", 
+                                                  "sd: ", round(Geom_STD_DEV, 4))), 
+             color = "green", size=4, nudge_x = .0002) + 
+  labs(title = "Geometric 30-Year Returns") +
+  ylab("Average") +
+  xlab("Standard Deviation") +
+  geom_point(data=signif_pts3[1,], aes(x=Geom_STD_DEV, y=Geom_Mean), color = "red", size = 5) +
+  geom_point(data=signif_pts3[2,], aes(x=Geom_STD_DEV, y=Geom_Mean), color = "green", size = 5) +
+  geom_point(data=signif_pts3[3,], aes(x=Geom_STD_DEV, y=Geom_Mean), color = "yellow", size = 5) +
+  geom_point(data=signif_pts3[4,], aes(x=Geom_STD_DEV, y=Geom_Mean), color = "orange", size = 5) +
+  geom_point(data=signif_pts3[5,], aes(x=Geom_STD_DEV, y=Geom_Mean, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "red", "58/42" = "green", "60/40" = "yellow", "100/0" = "orange"),
+                     labels = c("0/100", "58/42", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# 30 yr arithmetic sharpe ratio 
+signif_pts4 = stats[c(1, 30, 61, 101),]
+ggplot(data = stats, aes(x = Spread_num, y = Geom_Sharpe)) + 
+  geom_point() + 
+  geom_label(data=signif_pts4[2,], aes(x = Spread_num, y = Geom_Sharpe, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", 
+                                                  "Sharpe Ratio: ", round(Geom_Sharpe, 4))),
+             color = "green", size=4, nudge_y = -.025) + 
+  labs(title = "Geometric 30-Year Sharpe Ratio") +
+  ylab("Sharpe Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts4[1,], aes(x = Spread_num, y = Geom_Sharpe), color = "orange", size = 5) +
+  geom_point(data=signif_pts4[2,], aes(x = Spread_num, y = Geom_Sharpe), color = "green", size = 5) +
+  geom_point(data=signif_pts4[3,], aes(x = Spread_num, y = Geom_Sharpe), color = "yellow", size = 5) +
+  geom_point(data=signif_pts4[4,], aes(x = Spread_num, y = Geom_Sharpe), color = "red", size = 5) +
+  geom_point(data=signif_pts4[5,], aes(x = Spread_num, y = Geom_Sharpe, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "orange", "29/71" = "green", "60/40" = "yellow", "100/0" = "red"),
+                     labels = c("0/100", "29/71", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# 30 yr geometric risk/reward ratio 
+signif_pts5 = stats[c(1, 23, 61, 101),]
+ggplot(data = stats, aes(x = Spread_num, y = Geom_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts5[2,], aes(x = Spread_num, y = Geom_RRR, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", "Risk/Reward: ", round(Geom_RRR, 4))),
+             color = "green", size=4, nudge_y = .1) + 
+  geom_point(data=signif_pts5, aes(x = Spread_num, y = Geom_RRR), color = "red", size = 4) +
+  labs(title = "Geometric 30-Year Risk/Reward Ratio") +
+  ylab("Risk/Reward Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts5[1,], aes(x = Spread_num, y = Geom_RRR), color = "orange", size = 5) +
+  geom_point(data=signif_pts5[2,], aes(x = Spread_num, y = Geom_RRR), color = "green", size = 5) +
+  geom_point(data=signif_pts5[3,], aes(x = Spread_num, y = Geom_RRR), color = "yellow", size = 5) +
+  geom_point(data=signif_pts5[4,], aes(x = Spread_num, y = Geom_RRR), color = "red", size = 5) +
+  geom_point(data=signif_pts5[5,], aes(x = Spread_num, y = Geom_RRR, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "orange", "22/78" = "green", "60/40" = "yellow", "100/0" = "red"),
+                     labels = c("0/100", "22/78", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.85, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+
+```
+
+
+
+```{r}
+IB <- read_excel("Project 2 Historical Data.xlsx", 
+    range = "AO11:AR1175", col_types = c("numeric", 
+        "skip", "skip", "numeric")) 
+IB["Date"] = NA
+IB$Date = Monthly_Data1$Date
+IB = IB[,c(3,1:2)]
+
+IB_1a = IB
+IB_1g = IB
+IB_1g[,2:3] = 1 + IB_1g[,2:3]
+IB_a = IB_1a
+IB_a[,2:3] = NA
+IB_g = IB_1g
+IB_g[,2:3] = NA
+
+for(j in 2:3){
+  for(i in 1:1153){
+    x=i
+    y=i+11
+    IB_g[i,j] = prod(IB_1g[x:y, j])^(1/12)-1
+    IB_a[i,j] = sum(IB_1a[x:y, j])/12}}
+IB_g = IB_g[1:1153,]
+IB_a = IB_a[1:1153,]
+
+IB_g["diff"] = IB_g$`Ibbotson® SBBI® US (30-Day) Treasury Bills`-IB_g$`Ibbotson® SBBI® US Inflation`
+IB_a["diff"] = IB_a$`Ibbotson® SBBI® US (30-Day) Treasury Bills`-IB_a$`Ibbotson® SBBI® US Inflation`
+
+
+Monthly_Data1a = Monthly_Data1[, c(1, seq(6,306,3))]
+Monthly_Data1g = Monthly_Data1a
+Monthly_Data1g[,2:102] = 1 + Monthly_Data1g[,2:102]
+Monthly_Data_a = Monthly_Data1a
+Monthly_Data_a[,2:102] = NA
+Monthly_Data_a_sd = Monthly_Data_a
+Monthly_Data_g = Monthly_Data1g
+Monthly_Data_g[,2:102] = NA
+Monthly_Data_g_sd = Monthly_Data_g
+Sharpe_a = Monthly_Data_a
+Sharpe_g = Monthly_Data_g
+RRR = Monthly_Data_g
+STD_DEV = Monthly_Data_g
+
+for(i in 2:102){
+  for(j in 1:1153){
+    x=j
+    y=x+11
+    STD_DEV[j,i] = sqrt(var(Monthly_Data1a[x:y, i]))}}
+
+
+RRR[,2:102]=NA
+for(i in 2:102){
+  for(j in 1:1153){
+    x=j
+    y=x+11
+    frame = Monthly_Data1a[x:y,i]
+    count_reward = length(frame[frame>0])/12
+    count_risk = length(frame[frame<0])/12
+    reward = sum(frame[frame>0])
+    risk = sum(frame[frame<0])
+    RRR[j,i] = count_reward*reward + count_risk*risk}}
+
+
+
+# for(i in 2:102){
+#   for(j in 1:1153){
+#     x=j
+#     y=x+11
+#     Monthly_Data_a[j,i] = sum(Monthly_Data1a[x:y, i])/12
+#     std_dev = sqrt(var(Monthly_Data1a[x:y, i]))
+#     STD_DEV[j,i] = std_dev
+#     Sharpe_a[j,i] = Monthly_Data_a[j,i] - IB_a$diff[j]
+#     Sharpe_a[j,i] = Sharpe_a[j,i]/std_dev
+#     frame = Monthly_Data1a[x:y,i]
+#     count_reward1 = length(frame[frame>0])/12
+#     count_risk1 = length(frame[frame<0])/12
+#     reward1 = sum(frame[frame>0])
+#     risk1 = sum(frame[frame<0])
+#     RRR[j,i] = count_reward1*reward1 + count_risk1*risk1
+#     Monthly_Data_g[j,i] = prod(Monthly_Data1g[x:y, i])^(1/12) - 1
+#     Sharpe_g[j,i] = Monthly_Data_g[j,i] - IB_g$diff[j]
+#     Sharpe_g[j,i] = Sharpe_g[j,i]/std_dev}}
+
+```
+
+```{r}
+# Monthly_Data_a = Monthly_Data_a[1:1153,]
+# write.csv(Monthly_Data_a, "Monthly_Data_a.csv", row.names=FALSE, quote=FALSE) 
+# Monthly_Data_g = Monthly_Data_g[1:1153,]
+# write.csv(Monthly_Data_g, "Monthly_Data_g.csv", row.names=FALSE, quote=FALSE)
+# Sharpe_a = Sharpe_a[1:1153,]
+# write.csv(Sharpe_a, "Sharpe_a.csv", row.names=FALSE, quote=FALSE)
+# Sharpe_g = Sharpe_g[1:1153,]
+# write.csv(Sharpe_g, "Sharpe_g.csv", row.names=FALSE, quote=FALSE)
+# RRR = RRR[1:1153,]
+# write.csv(RRR, "RRR.csv", row.names=FALSE, quote=FALSE)
+# STD_DEV = STD_DEV[1:1153,]
+# write.csv(STD_DEV, "STD_DEV.csv", row.names=FALSE, quote=FALSE)
+
+# annual monthly_a
+Yearly_Monthly_Data_a = data.frame(matrix(ncol=102,nrow=97))
+colnames(Yearly_Monthly_Data_a) = colnames(Monthly_Data_a)
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_Monthly_Data_a[x,] = Monthly_Data_a[i,]
+    x = x + 1}}
+Yearly_Monthly_Data_a$Date = Data$Date
+
+# annual monthly_g
+Yearly_Monthly_Data_g = data.frame(matrix(ncol=102,nrow=97))
+colnames(Yearly_Monthly_Data_g) = colnames(Monthly_Data_g)
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_Monthly_Data_g[x,] = Monthly_Data_g[i,]
+    x = x + 1}}
+Yearly_Monthly_Data_g$Date = Data$Date
+
+# annual Sharpe_a
+Yearly_Sharpe_a = data.frame(matrix(ncol=102,nrow=97))
+colnames(Yearly_Sharpe_a) = colnames(Sharpe_a)
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_Sharpe_a[x,] = Sharpe_a[i,]
+    x = x + 1}}
+Yearly_Sharpe_a$Date = Data$Date
+
+# annual Sharpe_g
+Yearly_Sharpe_g = data.frame(matrix(ncol=102,nrow=97))
+colnames(Yearly_Sharpe_g) = colnames(Sharpe_g)
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_Sharpe_g[x,] = Sharpe_g[i,]
+    x = x + 1}}
+Yearly_Sharpe_g$Date = Data$Date
+
+# annual RRR
+Yearly_RRR = data.frame(matrix(ncol=102,nrow=97))
+colnames(Yearly_RRR) = colnames(RRR)
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_RRR[x,] = RRR[i,]
+    x = x + 1}}
+Yearly_RRR$Date = Data$Date
+
+# annual STD_DEV
+Yearly_STD_DEV = data.frame(matrix(ncol=102,nrow=97))
+colnames(Yearly_STD_DEV) = colnames(STD_DEV)
+x=1
+for(i in 1:1153){
+  if((i-1)%%12 ==0){
+    Yearly_STD_DEV[x,] = STD_DEV[i,]
+    x = x + 1}}
+Yearly_STD_DEV$Date = Data$Date
+
+
+
+stats1 = data.frame(matrix(nrow=101, ncol = 10))
+colnames(stats1) = c("Allocation", "Spread_num", "STD_DEV",  "Mean_a", "STD_DEV_a", "Sharpe_a", "RRR", "Mean_g", "STD_DEV_g", "Sharpe_g")
+stats1$Allocation = colnames(Mean)[2:102]
+stats1$Spread_num = c(seq(0,100,1))
+
+# Stats
+for(i in 0:100){
+  stats1$Mean_a[i+1] = sum(Monthly_Data_a[,i+2])/1153
+  stats1$STD_DEV[i+1] = sum(STD_DEV[,i+2])/1153
+  stats1$STD_DEV_a[i+1] = sqrt(var(Monthly_Data_a[,i+2]))
+  stats1$Sharpe_a[i+1] = sum(Sharpe_a[,i+2])/1153
+  stats1$RRR[i+1] = sum(RRR[, i+2])/1153
+  stats1$Mean_g[i+1] = sum(Monthly_Data_g[,i+2])/1153
+  stats1$STD_DEV_g[i+1] = sqrt(var(Monthly_Data_g[,i+2]))
+  stats1$Sharpe_g[i+1] = sum(Sharpe_g[,i+2])/1153}
+  
+
+stats2 = data.frame(matrix(nrow=101, ncol = 10))
+colnames(stats2) = c("Allocation", "Spread_num", "STD_DEV",  "Mean_a", "STD_DEV_a", "Sharpe_a", "RRR", "Mean_g", "STD_DEV_g", "Sharpe_g")
+stats2$Allocation = colnames(Mean)[2:102]
+stats2$Spread_num = c(seq(0,100,1))
+
+# Stats
+for(i in 0:100){
+  stats2$Mean_a[i+1] = sum(Yearly_Monthly_Data_a[,i+2])/1153
+  stats2$STD_DEV[i+1] = sum(Yearly_STD_DEV[,i+2])/1153
+  stats2$STD_DEV_a[i+1] = sqrt(var(Yearly_Monthly_Data_a[,i+2]))
+  stats2$Sharpe_a[i+1] = sum(Yearly_Sharpe_a[,i+2])/1153
+  stats2$RRR[i+1] = sum(Yearly_RRR[, i+2])/1153
+  stats2$Mean_g[i+1] = sum(Yearly_Monthly_Data_g[,i+2])/1153
+  stats2$STD_DEV_g[i+1] = sqrt(var(Yearly_Monthly_Data_g[,i+2]))
+  stats2$Sharpe_g[i+1] = sum(Yearly_Sharpe_g[,i+2])/1153}
+
+
+
+# arith 12-month average vs std
+signif_pts0 = stats[c(1, 61, 70, 101),]
+ggplot(data = stats, aes(x = STD_DEV, y = arith_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x=arith_STD_DEV, y=arith_Mean, 
+                                   label = paste0("mean: ", round(arith_Mean,4), "\n", "sd: ", round(arith_STD_DEV,4))),
+             color = "green", size=4, nudge_x = .0002, nudge_y = 0.0001) +
+  geom_point(data=signif_pts0[1,], aes(x=arith_STD_DEV, y=arith_Mean), color = "red", size = 5) +
+  geom_point(data=signif_pts0[2,], aes(x=arith_STD_DEV, y=arith_Mean), color = "yellow", size = 5) +
+  geom_point(data=signif_pts0[3,], aes(x=arith_STD_DEV, y=arith_Mean), color = "green", size = 5) +
+  geom_point(data=signif_pts0[4,], aes(x=arith_STD_DEV, y=arith_Mean), color = "orange", size = 5) +
+  geom_point(data=signif_pts0[5,], aes(x=arith_STD_DEV, y=arith_Mean, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "red", "60/40" = "yellow", "69/31" = "green", "100/0" = "orange"),
+                     labels = c("0/100", "60/40", "69/31", "100/0"))+
+  labs(title = "arithmetic 30-Year Returns") +
+  ylab("Average") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+
+# 30 yr geometric risk/reward ratio 
+signif_pts5 = stats[c(1, 23, 61, 101),]
+ggplot(data = stats, aes(x = Spread_num, y = Geom_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts5[2,], aes(x = Spread_num, y = Geom_RRR, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", "Risk/Reward: ", round(Geom_RRR, 4))),
+             color = "green", size=4, nudge_y = .1) + 
+  geom_point(data=signif_pts5, aes(x = Spread_num, y = Geom_RRR), color = "red", size = 4) +
+  labs(title = "Geometric 30-Year Risk/Reward Ratio") +
+  ylab("Risk/Reward Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts5[1,], aes(x = Spread_num, y = Geom_RRR), color = "orange", size = 5) +
+  geom_point(data=signif_pts5[2,], aes(x = Spread_num, y = Geom_RRR), color = "green", size = 5) +
+  geom_point(data=signif_pts5[3,], aes(x = Spread_num, y = Geom_RRR), color = "yellow", size = 5) +
+  geom_point(data=signif_pts5[4,], aes(x = Spread_num, y = Geom_RRR), color = "red", size = 5) +
+  geom_point(data=signif_pts5[5,], aes(x = Spread_num, y = Geom_RRR, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "orange", "22/78" = "green", "60/40" = "yellow", "100/0" = "red"),
+                     labels = c("0/100", "22/78", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.85, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+```
+
+```{r}
+
+
+annual3a = annual[, c(1, seq(6,306,3))]
+annual3g = annual3a
+annual3g[,2:102] = 1 + annual3g[,2:102]
+annual_arith = annual3a
+annual_arith[,2:102] = NA
+annual_geom = annual_arith
+
+for(i in 0:100){
+  for(j in 1:94){
+    x = j
+    y = x + 2
+    annual_arith = sum(annual3a[x:y, i])/3
+    annual_geom = prod(annual3g[x:y, i])^(1/3)-1
+  }
+}
+
+
+
+
+annual[, c(1, seq(6,306,3))] 
+Yearly_Monthly_Data_a[,]
+
+
+annual_RRR1 = data.frame(matrix(ncol=506, nrow = 40))
+vect44 = vector()
+for(i in 0:100){
+  vect44 = append(vect44, paste0("Risk ", i, "/", 100-i))
+  vect44 = append(vect44, paste0("Reward ", i, "/", 100-i))
+  vect44 = append(vect44, paste0("Risk-Reward Ratio ", i, "/", 100-i))
+  vect44 = append(vect44, paste0("Reward-Risk Ratio ", i, "/", 100-i))
+  vect44 = append(vect44, paste0("Expectation ", i, "/", 100-i))}
+colnames(annual_RRR1) = c("Date", vect44)
+annual_RRR1$Date = Data$Date[337:794]
+annual_RRR1[,2:304] = NA
+
+t=2
+for(i in 2:102){
+  for(j in 1:458){
+    x=j
+    y=x+29
+    risk = 0
+    a=0
+    reward = 0
+    b=0
+    for(z in x:y){
+      if(annual_rrr1[z,i] > 0){
+        reward = reward + annual_rrr1[z,i]
+        b=b+1}
+      if(annual_rrr1[z,i] < 0){
+        risk = risk + annual_rrr1[z,i]
+        a=a+1}}
+    annual_RRR1[j,t] = risk/a
+    annual_RRR1[j,t+1] = reward/b
+    annual_RRR1[j,t+2] = abs(risk/reward)
+    annual_RRR1[j,t+3] = abs(reward/risk)
+    annual_RRR1[j,t+4] = a*risk/30 + b*reward/30}
+    t=t+5}
+
+stats3 = data.frame(matrix(nrow=101, ncol = 6))
+colnames(stats3) = c("Allocation", "Spread_num", "min", "max", "Mean", "STD_DEV")
+stats3$Allocation = colnames(Mean)[2:102]
+stats3$Spread_num = c(seq(0,100,1))
+stats3a = stats3
+colnames(stats3a)[5] = "Expectation"
+stats3b=stats3a
+Annual_RRR1 = annual_RRR1[, c(1, seq(5,505,5))]
+
+
+for(i in 0:100){
+    stats3[i+1, 3] = min(Annual_RRR1[, i+2])
+    stats3[i+1, 4] = max(Annual_RRR1[, i+2])
+    stats3[i+1, 5] = sum(Annual_RRR1[, i+2])/40
+    stats3[i+1, 6] = sqrt(var(Annual_RRR1[, i+2]))}
+
+
+Annual_RRR2 = annual_RRR1[, c(1, seq(6,506,5))]
+for(i in 0:100){
+    stats3a[i+1, 3] = min(Annual_RRR2[, i+2])
+    stats3a[i+1, 4] = max(Annual_RRR2[, i+2])
+    stats3a[i+1, 5] = sum(Annual_RRR2[, i+2])/40
+    stats3a[i+1, 6] = sqrt(var(Annual_RRR2[, i+2]))}
+
+stats3 = stats3%>%
+  mutate("95%CI" = stats3$Mean - 1.96*stats3$STD_DEV)
+
+stats3["P[x<0]"] = NA
+stats3$`P[x<0]` = c(pnorm(0, mean=stats3$Mean, sd = stats3$STD_DEV, lower.tail = TRUE))
+
+
+stats3a = stats3a %>%
+  mutate("95%CI" = stats3a$Mean - 1.96*stats3a$STD_DEV)
+
+stats3a = stats3a %>%
+  mutate("Expectation1" = stats3a$Expectation^(1/30))
+
+stats3a = stats3a %>%
+  mutate("STD_DEV1" = stats3a$STD_DEV^(1/30))
+
+stats3a["P[x<0]"] = NA
+stats3a$`P[x<0]` = c(pnorm(0, mean=stats3a$Mean, sd = stats3a$STD_DEV, lower.tail = TRUE))
+
+annual_rrr = annual[29:97, c(1, seq(6,306,3))]
+annual_RRR = data.frame(matrix(ncol=6, nrow = 101))
+colnames(annual_RRR) = c("Allocation", "Num", "Risk", "Reward", "Risk-Reward Ratio", "Reward-Risk Ratio")
+annual_RRR$Allocation = colnames(annual_rrr)[2:102]
+annual_RRR$Num = c(0:100)
+for(i in 0:100){
+  minus = 0
+  plus = 0
+  for(j in 1:97){
+    if(annual_rrr[j,i+2] > 0){
+      plus = plus + annual_rrr[j,i+2]}
+    if(annual_rrr[j,i+2] < 0){
+      minus = minus + annual_rrr[j,i+2]}}
+  annual_RRR$Risk[i+1] = minus
+  annual_RRR$Reward[i+1] = plus
+  annual_RRR$`Risk-Reward Ratio`[i+1] = abs(minus/plus)
+  annual_RRR$`Reward-Risk Ratio`[i+1] = abs(plus/minus)}
+
+stats3 = data.frame(matrix(nrow=101, ncol = 6))
+colnames(stats3) = c("Allocation", "Spread_num", "min", "max", "Mean", "STD_DEV")
+stats3$Allocation = colnames(Mean)[2:102]
+stats3$Spread_num = c(seq(0,100,1))
+
+Annual_RRR3 = Annual_RRR2
+Annual_RRR3[,2:102] = Annual_RRR3[,2:102]^(1/30)
+
+for(i in 0:100){
+    stats3b[i+1, 3] = min(Annual_RRR3[, i+2])
+    stats3b[i+1, 4] = max(Annual_RRR3[, i+2])
+    stats3b[i+1, 5] = sum(Annual_RRR3[, i+2])/40
+    stats3b[i+1, 6] = sqrt(var(Annual_RRR3[, i+2]))}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+x=sum(Monthly_Data1a[1:12, 2])/12
+y=sqrt(var(Monthly_Data1a[1:12, 2]))
+y/x
+
+annual_rrr1 = annual[29:97, c(1, seq(6,306,3))]
+annual_RRR1 = data.frame(matrix(ncol=506, nrow = 40))
+vect44 = vector()
+for(i in 0:100){
+  vect44 = append(vect44, paste0("Risk ", i, "/", 100-i))
+  vect44 = append(vect44, paste0("Reward ", i, "/", 100-i))
+  vect44 = append(vect44, paste0("Risk-Reward Ratio ", i, "/", 100-i))
+  vect44 = append(vect44, paste0("Reward-Risk Ratio ", i, "/", 100-i))
+  vect44 = append(vect44, paste0("Expectation ", i, "/", 100-i))}
+colnames(annual_RRR1) = c("Date", vect44)
+annual_RRR1$Date = Data$Date[29:68]
+annual_RRR1[,2:304] = NA
+
+t=2
+for(i in 2:102){
+  for(j in 1:40){
+    x=j
+    y=x+29
+    risk = 0
+    a=0
+    reward = 0
+    b=0
+    for(z in x:y){
+      if(annual_rrr1[z,i] > 0){
+        reward = reward + annual_rrr1[z,i]
+        b=b+1}
+      if(annual_rrr1[z,i] < 0){
+        risk = risk + annual_rrr1[z,i]
+        a=a+1}}
+    annual_RRR1[j,t] = risk/a
+    annual_RRR1[j,t+1] = reward/b
+    annual_RRR1[j,t+2] = abs(risk/reward)
+    annual_RRR1[j,t+3] = abs(reward/risk)
+    annual_RRR1[j,t+4] = a*risk/30 + b*reward/30}
+    t=t+5}
+
+stats3 = data.frame(matrix(nrow=101, ncol = 6))
+colnames(stats3) = c("Allocation", "Spread_num", "min", "max", "Mean", "STD_DEV")
+stats3$Allocation = colnames(Mean)[2:102]
+stats3$Spread_num = c(seq(0,100,1))
+stats3a = stats3
+colnames(stats3a)[5] = "Expectation"
+stats3b=stats3a
+Annual_RRR1 = annual_RRR1[, c(1, seq(5,505,5))]
+
+
+for(i in 0:100){
+    stats3[i+1, 3] = min(Annual_RRR1[, i+2])
+    stats3[i+1, 4] = max(Annual_RRR1[, i+2])
+    stats3[i+1, 5] = sum(Annual_RRR1[, i+2])/40
+    stats3[i+1, 6] = sqrt(var(Annual_RRR1[, i+2]))}
+
+
+Annual_RRR2 = annual_RRR1[, c(1, seq(6,506,5))]
+for(i in 0:100){
+    stats3a[i+1, 3] = min(Annual_RRR2[, i+2])
+    stats3a[i+1, 4] = max(Annual_RRR2[, i+2])
+    stats3a[i+1, 5] = sum(Annual_RRR2[, i+2])/40
+    stats3a[i+1, 6] = sqrt(var(Annual_RRR2[, i+2]))}
+
+stats3 = stats3%>%
+  mutate("95%CI" = stats3$Mean - 1.96*stats3$STD_DEV)
+
+stats3["P[x<0]"] = NA
+stats3$`P[x<0]` = c(pnorm(0, mean=stats3$Mean, sd = stats3$STD_DEV, lower.tail = TRUE))
+
+
+stats3a = stats3a %>%
+  mutate("95%CI" = stats3a$Mean - 1.96*stats3a$STD_DEV)
+
+stats3a = stats3a %>%
+  mutate("Expectation1" = stats3a$Expectation^(1/30))
+
+stats3a = stats3a %>%
+  mutate("STD_DEV1" = stats3a$STD_DEV^(1/30))
+
+stats3a["P[x<0]"] = NA
+stats3a$`P[x<0]` = c(pnorm(0, mean=stats3a$Mean, sd = stats3a$STD_DEV, lower.tail = TRUE))
+
+annual_rrr = annual[29:97, c(1, seq(6,306,3))]
+annual_RRR = data.frame(matrix(ncol=6, nrow = 101))
+colnames(annual_RRR) = c("Allocation", "Num", "Risk", "Reward", "Risk-Reward Ratio", "Reward-Risk Ratio")
+annual_RRR$Allocation = colnames(annual_rrr)[2:102]
+annual_RRR$Num = c(0:100)
+for(i in 0:100){
+  minus = 0
+  plus = 0
+  for(j in 1:97){
+    if(annual_rrr[j,i+2] > 0){
+      plus = plus + annual_rrr[j,i+2]}
+    if(annual_rrr[j,i+2] < 0){
+      minus = minus + annual_rrr[j,i+2]}}
+  annual_RRR$Risk[i+1] = minus
+  annual_RRR$Reward[i+1] = plus
+  annual_RRR$`Risk-Reward Ratio`[i+1] = abs(minus/plus)
+  annual_RRR$`Reward-Risk Ratio`[i+1] = abs(plus/minus)}
+
+stats3 = data.frame(matrix(nrow=101, ncol = 6))
+colnames(stats3) = c("Allocation", "Spread_num", "min", "max", "Mean", "STD_DEV")
+stats3$Allocation = colnames(Mean)[2:102]
+stats3$Spread_num = c(seq(0,100,1))
+
+Annual_RRR3 = Annual_RRR2
+Annual_RRR3[,2:102] = Annual_RRR3[,2:102]^(1/30)
+
+for(i in 0:100){
+    stats3b[i+1, 3] = min(Annual_RRR3[, i+2])
+    stats3b[i+1, 4] = max(Annual_RRR3[, i+2])
+    stats3b[i+1, 5] = sum(Annual_RRR3[, i+2])/40
+    stats3b[i+1, 6] = sqrt(var(Annual_RRR3[, i+2]))}
+
+
+
+ggplot(data=stats3a, aes(y=Expectation1, x=STD_DEV1)) + geom_point() + geom_label(data=stats3a, aes(y=Expectation1, x=STD_DEV1, label = Spread_num))
+
+
+ggplot(data=stats3a, aes(y=Spread_num, x=ExpectSTD_DEV)) + geom_point() + geom_label(data=stats3a, aes(y=Expectation1, x=STD_DEV, label = Spread_num))
+
+t=5
+for(i in 0:100){
+    stats3[i+1, 3] = min(annual_RRR[, t])
+    stats3[i+1, 4] = max(annual_RRR[, t])
+    stats3[i+1, 5] = sum(annual_RRR[, t])/40
+    stats3[i+1, 6] = sqrt(var(annual_RRR[, t]))
+    t=t+4}
+
+
+pnorm(0, mean=stats3$Mean, sd = stats3$STD_DEV, lower.tail = TRUE)
+```
+
+```{r}
+
+# arith 30-yr average vs std
+signif_pts0 = stats[c(1, 61, 70, 101),]
+ggplot(data = stats, aes(x = arith_STD_DEV, y = arith_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x=arith_STD_DEV, y=arith_Mean, 
+                                   label = paste0("mean: ", round(arith_Mean,4), "\n", "sd: ", round(arith_STD_DEV,4))),
+             color = "green", size=4, nudge_x = .0002, nudge_y = 0.0001) +
+  geom_point(data=signif_pts0[1,], aes(x=arith_STD_DEV, y=arith_Mean), color = "red", size = 5) +
+  geom_point(data=signif_pts0[2,], aes(x=arith_STD_DEV, y=arith_Mean), color = "yellow", size = 5) +
+  geom_point(data=signif_pts0[3,], aes(x=arith_STD_DEV, y=arith_Mean), color = "green", size = 5) +
+  geom_point(data=signif_pts0[4,], aes(x=arith_STD_DEV, y=arith_Mean), color = "orange", size = 5) +
+  geom_point(data=signif_pts0[5,], aes(x=arith_STD_DEV, y=arith_Mean, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "red", "60/40" = "yellow", "69/31" = "green", "100/0" = "orange"),
+                     labels = c("0/100", "60/40", "69/31", "100/0"))+
+  labs(title = "arithmetic 30-Year Returns") +
+  ylab("Average") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# 30 yr arithmetic sharpe ratio
+signif_pts1 = stats[c(1, 31, 61, 101),]
+ggplot(data = stats, aes(x = Spread_num, y = arith_Sharpe)) + 
+  geom_point() + 
+  geom_label(data=signif_pts1[2,], aes(x = Spread_num, y = arith_Sharpe, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", 
+                                                  "Sharpe Ratio: ", round(arith_Sharpe, 4))),
+             color = "green", size=4, nudge_y = -.025) + 
+  geom_point(data=signif_pts1, aes(x = Spread_num, y = arith_Sharpe), color = "red", size = 4) +
+  labs(title = "arithmetic 30-Year Sharpe Ratio") +
+  ylab("Sharpe Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts1[1,], aes(x = Spread_num, y = arith_Sharpe), color = "orange", size = 5) +
+  geom_point(data=signif_pts1[2,], aes(x = Spread_num, y = arith_Sharpe), color = "green", size = 5) +
+  geom_point(data=signif_pts1[3,], aes(x = Spread_num, y = arith_Sharpe), color = "yellow", size = 5) +
+  geom_point(data=signif_pts1[4,], aes(x = Spread_num, y = arith_Sharpe), color = "red", size = 5) +
+  geom_point(data=signif_pts1[5,], aes(x = Spread_num, y = arith_Sharpe, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "orange", "30/70" = "green", "60/40" = "yellow", "100/0" = "red"),
+                     labels = c("0/100", "30/70", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# 30 yr arith risk/reward ratio
+signif_pts2 = stats[c(1, 23, 61, 101),]
+ggplot(data = stats, aes(x = Spread_num, y = arith_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts2[2,], aes(x = Spread_num, y = arith_RRR, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", 
+                                                  "Risk/Reward: ", round(arith_RRR, 4))),
+             color = "green", size=4, nudge_y = .05) + 
+  labs(title = "arithmetic 30-Year Risk/Reward Ratio") +
+  ylab("Risk/Reward Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts2[1,], aes(x = Spread_num, y = arith_RRR), color = "orange", size = 5) +
+  geom_point(data=signif_pts2[2,], aes(x = Spread_num, y = arith_RRR), color = "green", size = 5) +
+  geom_point(data=signif_pts2[3,], aes(x = Spread_num, y = arith_RRR), color = "yellow", size = 5) +
+  geom_point(data=signif_pts2[4,], aes(x = Spread_num, y = arith_RRR), color = "red", size = 5) +
+  geom_point(data=signif_pts2[5,], aes(x = Spread_num, y = arith_RRR, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "orange", "22/78" = "green", "60/40" = "yellow", "100/0" = "red"),
+                     labels = c("0/100", "22/78", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.85, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# Geom 30-yr average vs std
+signif_pts3 = stats[c(1, 59, 61, 101),]
+ggplot(data = stats, aes(x = Geom_STD_DEV, y = Geom_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts3[2,], aes(x=Geom_STD_DEV, y=Geom_Mean, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", 
+                                                  "mean: ", round(Geom_Mean, 4), "\n", 
+                                                  "sd: ", round(Geom_STD_DEV, 4))), 
+             color = "green", size=4, nudge_x = .0002) + 
+  labs(title = "Geometric 30-Year Returns") +
+  ylab("Average") +
+  xlab("Standard Deviation") +
+  geom_point(data=signif_pts3[1,], aes(x=Geom_STD_DEV, y=Geom_Mean), color = "red", size = 5) +
+  geom_point(data=signif_pts3[2,], aes(x=Geom_STD_DEV, y=Geom_Mean), color = "green", size = 5) +
+  geom_point(data=signif_pts3[3,], aes(x=Geom_STD_DEV, y=Geom_Mean), color = "yellow", size = 5) +
+  geom_point(data=signif_pts3[4,], aes(x=Geom_STD_DEV, y=Geom_Mean), color = "orange", size = 5) +
+  geom_point(data=signif_pts3[5,], aes(x=Geom_STD_DEV, y=Geom_Mean, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "red", "58/42" = "green", "60/40" = "yellow", "100/0" = "orange"),
+                     labels = c("0/100", "58/42", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# 30 yr arithmetic sharpe ratio 
+signif_pts4 = stats[c(1, 30, 61, 101),]
+ggplot(data = stats, aes(x = Spread_num, y = Geom_Sharpe)) + 
+  geom_point() + 
+  geom_label(data=signif_pts4[2,], aes(x = Spread_num, y = Geom_Sharpe, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", 
+                                                  "Sharpe Ratio: ", round(Geom_Sharpe, 4))),
+             color = "green", size=4, nudge_y = -.025) + 
+  labs(title = "Geometric 30-Year Sharpe Ratio") +
+  ylab("Sharpe Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts4[1,], aes(x = Spread_num, y = Geom_Sharpe), color = "orange", size = 5) +
+  geom_point(data=signif_pts4[2,], aes(x = Spread_num, y = Geom_Sharpe), color = "green", size = 5) +
+  geom_point(data=signif_pts4[3,], aes(x = Spread_num, y = Geom_Sharpe), color = "yellow", size = 5) +
+  geom_point(data=signif_pts4[4,], aes(x = Spread_num, y = Geom_Sharpe), color = "red", size = 5) +
+  geom_point(data=signif_pts4[5,], aes(x = Spread_num, y = Geom_Sharpe, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "orange", "29/71" = "green", "60/40" = "yellow", "100/0" = "red"),
+                     labels = c("0/100", "29/71", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+
+# 30 yr geometric risk/reward ratio 
+signif_pts5 = stats[c(1, 23, 61, 101),]
+ggplot(data = stats, aes(x = Spread_num, y = Geom_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts5[2,], aes(x = Spread_num, y = Geom_RRR, 
+                                   label = paste0(Spread_num, "/", 100-Spread_num, "\n", "Risk/Reward: ", round(Geom_RRR, 4))),
+             color = "green", size=4, nudge_y = .1) + 
+  geom_point(data=signif_pts5, aes(x = Spread_num, y = Geom_RRR), color = "red", size = 4) +
+  labs(title = "Geometric 30-Year Risk/Reward Ratio") +
+  ylab("Risk/Reward Ratio") +
+  xlab("Allocation (Large Cap)") +
+  geom_point(data=signif_pts5[1,], aes(x = Spread_num, y = Geom_RRR), color = "orange", size = 5) +
+  geom_point(data=signif_pts5[2,], aes(x = Spread_num, y = Geom_RRR), color = "green", size = 5) +
+  geom_point(data=signif_pts5[3,], aes(x = Spread_num, y = Geom_RRR), color = "yellow", size = 5) +
+  geom_point(data=signif_pts5[4,], aes(x = Spread_num, y = Geom_RRR), color = "red", size = 5) +
+  geom_point(data=signif_pts5[5,], aes(x = Spread_num, y = Geom_RRR, color = Allocation), size = 5) + 
+  scale_color_manual(values = c("0/100" = "orange", "22/78" = "green", "60/40" = "yellow", "100/0" = "red"),
+                     labels = c("0/100", "22/78", "60/40", "100/0"))+
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.85, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15),
+        legend.background = element_rect(fill="gray90", size=.5))
+
+```
+
+```{r}
+# 12 month average
+
+
+
+
+# Mean
+Mean2 = Monthly_Data1[1:1164,c(1, seq(6,306,3))]
+colnames(Mean2)[2:102] = vect0
+# Sharpe
+Sharpe = Mean2
+Sharpe[,2:102] = NA
+
+for(i in 0:100){
+  for(j in 1:1164){
+    Sharpe[j, i+2] = Mean2[j, i+2] - IB$diff[j]}}
+
+stats1 = data.frame(matrix(nrow=101, ncol = 9))
+colnames(stats1) = c("Allocation", "Spread_num", "min", "max", "Mean", "STD_DEV", "Variance", "Sharpe", "RRR")
+stats1$Allocation = colnames(Mean)[2:102]
+stats1$Spread_num = c(seq(0,100,1))
+
+
+# Stats
+for(i in 0:100){
+  stats1$Sharpe[i+1] = sum(Sharpe[,i+2])/1164
+  stats1$Sharpe[i+1] = stats1$Sharpe[i+1]/sqrt(var(Mean[, i+2]))
+  stats1[i+1, 3] = min(Mean2[, i+2])
+  stats1[i+1, 4] = max(Mean2[, i+2])
+  stats1[i+1, 5] = sum(Mean2[,i+2])
+  stats1[i+1, 5] = stats1[i+1, 5]/1164
+  stats1[i+1, 6] = sqrt(var(Mean2[, i+2]))
+  stats1[i+1, 7] = var(Mean2[, i+2])
+  stats1[i+1, 9] = stats1$STD_DEV[i+1]/stats1$Mean[i+1]}
+
+```
+
+```{r}
+# geometric
+Geometric = annual[,c(1, seq(6,306,3))]
+colnames(Geometric)[2:102] = vect0
+
+Geometric1 = Geometric
+Geometric1[,2:102] = 1+Geometric1[,2:102]
+
+Geometric2 = Geometric1[1:68,]
+Geometric2[, c(2:102)] = NA
+# 30 year geom
+for(i in 0:100){
+  for(j in 1:68){
+    x=j
+    y=x+29
+    Geometric2[j, i+2] = prod(Geometric1[x:y, i+2])
+    Geometric2[j, i+2] = Geometric2[j, i+2]^(1/30) - 1}}
+
+Geometric_stats = data.frame(matrix(nrow=101, ncol = 7))
+colnames(Geometric_stats) = c("Allocation", "Spread_num", "min", "max", "Mean", "STD_DEV", "Variance")
+Geometric_stats$Allocation = colnames(Geometric2)[2:102]
+Geometric_stats$Spread_num = c(seq(0,100,1))
+
+
+# Geometric Stats
+for(i in 0:100){
+    Geometric_stats[i+1, 3] = min(Geometric2[, i+2])
+    Geometric_stats[i+1, 4] = max(Geometric2[, i+2])
+    Geometric_stats[i+1, 5] = sum(Geometric2[,i+2])
+    Geometric_stats[i+1, 5] = Geometric_stats[i+1, 5]/68
+    Geometric_stats[i+1, 6] = sqrt(var(Geometric2[, i+2]))
+    Geometric_stats[i+1, 7] = var(Geometric2[, i+2])}
+
+# 30 yr geom avg v std
+signif_pts = Geometric_stats[c(1, 61, 78, 101),]
+ggplot(data = Geometric_stats, aes(x = STD_DEV, y = Mean)) + geom_point() + geom_label(data=signif_pts, aes(x=STD_DEV, y=Mean, label = paste0(Spread_num, "/", 100-Spread_num)), color = "red", size=7, nudge_x = -.001) + 
+  geom_point(data=signif_pts, aes(x=STD_DEV, y=Mean), color = "red", size = 4) +
+  labs(title = "30 Year Geometric Returns") +
+  ylab("Average") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15))
+
+
+# 3 yr geom
+Geometric3 = Geometric1[1:95,]
+Geometric3[, c(2:102)] = NA
+# 3 year geom
+for(i in 0:100){
+  for(j in 1:95){
+    x=j
+    y=x+2
+    Geometric3[j, i+2] = prod(Geometric1[x:y, i+2])
+    Geometric3[j, i+2] = Geometric3[j, i+2]^(1/3) - 1}}
+
+Geometric_stats2 = data.frame(matrix(nrow=101, ncol = 7))
+colnames(Geometric_stats2) = c("Allocation", "Spread_num", "min", "max", "Mean", "STD_DEV", "Variance")
+Geometric_stats2$Allocation = colnames(Geometric3)[2:102]
+Geometric_stats2$Spread_num = c(seq(0,100,1))
+
+# Geometric Stats
+for(i in 0:100){
+    Geometric_stats2[i+1, 3] = min(Geometric3[, i+2])
+    Geometric_stats2[i+1, 4] = max(Geometric3[, i+2])
+    Geometric_stats2[i+1, 5] = sum(Geometric3[,i+2])
+    Geometric_stats2[i+1, 5] = Geometric_stats2[i+1, 5]/95
+    Geometric_stats2[i+1, 6] = sqrt(var(Geometric3[, i+2]))
+    Geometric_stats2[i+1, 7] = var(Geometric3[, i+2])}
+
+Geometric_stats2 = Geometric_stats2 %>%
+  mutate("Sharpe Ratio" = Geometric_stats2$Mean / Geometric_stats2$STD_DEV)
+
+# 3 yr geom avg v std
+signif_pts2 = Geometric_stats2
+ggplot(data = Geometric_stats2, aes(x = STD_DEV, y = Mean)) + geom_point() + geom_label(data=signif_pts2, aes(x=STD_DEV, y=Mean, label = paste0(Spread_num, "/", 100-Spread_num)), color = "red", size=7, nudge_x = -.001) + 
+  geom_point(data=signif_pts2, aes(x=STD_DEV, y=Mean), color = "red", size = 4) +
+  labs(title = "3 Year Geometric Returns") +
+  ylab("Average") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15))
+
+
+
+
+
+
+# Geometric 30-yr avg
+for(i in 0:100){
+  alpha = i/100
+  Geometric[vect0[i+1]] <- alpha*Geometric$`Large Cap TR` + (1-alpha)*Geometric$FIXED}
+
+
+prod(geom_annual0[1:30, 2])^(1/30)-1
+geom_annual0 = annual[,c(1, seq(6,306,3))]
+geom_annual0[,2:102] = geom_annual0[,2:102] + 1 
+
+geom_annual = geom_annual0[1:68,]
+for(i in 2:102){
+  for(j in 1:68){
+    geom_annual[j, i] = prod(geom_annual0[j:j+29, i])^(1/30) - 1}}
+
+Geometric_stats_annual = data.frame(matrix(nrow=101, ncol = 7))
+colnames(Geometric_stats_annual) = c("Allocation", "Spread_num", "min", "max", "Mean", "STD_DEV", "Variance")
+Geometric_stats_annual$Allocation = colnames(Geometric2)[4:104]
+Geometric_stats_annual$Spread_num = c(seq(0,100,1))
+
+for(i in 0:100){
+    Geometric_stats_annual[i+1, 3] = min(geom_annual[, i+2])
+    Geometric_stats_annual[i+1, 4] = max(geom_annual[, i+2])
+    Geometric_stats_annual[i+1, 5] = sum(geom_annual[,i+2])
+    Geometric_stats_annual[i+1, 5] = Geometric_stats_annual[i+1, 5]/68
+    Geometric_stats_annual[i+1, 6] = sqrt(var(geom_annual[, i+2]))
+    Geometric_stats_annual[i+1, 7] = var(geom_annual[, i+2])}
+
+
+comp = data.frame(matrix(nrow=97, ncol=306))
+vect = vector()
+vect= append(vect, NA)
+for(i in 2:306){
+  vect = append(vect, mean(annual[,i]))}
+
+colnames(comp) = colnames(Data)
+for(i in 1:306){
+  for(j in 1:97){
+    if(annual[j,i] == Data[j,i]){
+      comp[j,i] = TRUE}
+    else{
+      comp[j,i] = (annual[j,i] - Data[j,i])^2}}}
+
+for(i in 2:306){
+  if(annual[j,i] == Data[j,i]){
+      comp[98,i] = 0}
+    else{
+      comp[98,i] = sqrt((1/97)*sum(comp[1:97,i]) / (vect[i])^2)}}
+
+
+vect = vector()
+vect = append(vect, "Date")
+vect = append(vect, "Large Cap")
+vect = append(vect, "Fixed")
+for(i in 4:306){
+  if((i-3)%%3 == 1){
+    vect = append(vect, "Large Cap")}
+  if((i-3)%%3 == 2){
+    vect = append(vect, "Fixed")}
+  if((i-3)%%3 == 0){
+    vect = append(vect, "Portfolio")}}
+
+data = data.frame(matrix(ncol = 306))
+data[1,] = vect
+colnames(data) = colnames(Monthly_Data)
+
+list1 = c(1)
+for(i in 1:306){
+  if(data[1,i] == "Portfolio"){
+    list1 = append(list1, i)}}
+Monthly_Portfolio = Monthly_Data[, list1]
+
+list2 = c(1)
+for(i in 1:306){
+  if(data[1,i] == "Large Cap"){
+    list2 = append(list2, i)}}
+Monthly_LC = Monthly_Data[, list2]
+
+list3 = c(1)
+for(i in 1:306){
+  if(data[1,i] == "Fixed"){
+    list3 = append(list3, i)}}
+Monthly_Fixed = Monthly_Data[, list3]
+
+
+# 60-40 historic returns
+Monthly_Data60 = Monthly_Data[c("Date", "LC60", "FIX60", "Folio60")]
+
+Data60 = Monthly_Data60[c(67, 136, 574, 987, 1153), c(1,4)]
+
+ggplot(data = Monthly_Data60, aes(x = Date, y = FIX60,color="Fixed")) + 
+  geom_line() +
+  geom_line(data = Monthly_Data60, aes(x = Date, y = LC60, color="Large Cap")) +
+  geom_line(data = Monthly_Data60, aes(x = Date, y = Folio60, color="Portfolio")) + 
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        legend.title = element_blank(),
+        legend.text = element_text(size=12),
+        legend.position = c(.95, .95),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.justification = c("right", "top"),
+        legend.box.just = "right") +
+  ylab("Total Return") +
+  scale_y_continuous(name = "Total Returns",
+                     breaks = seq(-0.5, 1, 0.25),
+                     limits=c(-0.5, 1.05))+
+  scale_color_manual(values=c('Green','Orange', 'Purple')) +
+  geom_point(data=Data60, aes(x=Date, y=Folio60), size=3, color="purple")+
+  geom_label(data=Data60, aes(x=Date, y=Folio60, label = paste0(100 * signif(Folio60, 4), "%")), color = "black", size=5, nudge_y = -.05) + 
+  labs(title = "60-40 Portfolio 12-Month Total Returns")
+
+```
+
+```{r}
+Monthly_Data1 = Monthly_Data1 %>%
+  mutate("LC60" = Monthly_Data1$`Large Cap TR` * 0.6)
+
+Monthly_Data1 = Monthly_Data1 %>%
+  mutate("Fix40" = Monthly_Data1$FIXED * 0.4)
+
+Monthly_Data1 = Monthly_Data1 %>%
+  mutate("Portfolio" = Monthly_Data1$LC60 + Monthly_Data1$Fix40)
+
+Monthly_Data1_LC = data.frame(matrix(nrow=12, ncol=97))
+colnames(Monthly_Data1_LC) = c(seq(1926,2022,1))
+
+Monthly_Data1_Fix = data.frame(matrix(nrow=12, ncol=97))
+colnames(Monthly_Data1_Fix) = c(seq(1926,2022,1))
+
+Monthly_Data1_Portfolio = data.frame(matrix(nrow=12, ncol=97))
+colnames(Monthly_Data1_Portfolio) = c(seq(1926,2022,1))
+
+for(i in 1:97){
+  x = (i-1)*12 + 1
+  y = 12 * i
+  Monthly_Data1_LC[1:12, i] = Monthly_Data1$LC60[x:y]
+  Monthly_Data1_Fix[1:12, i] = Monthly_Data1$Fix40[x:y]
+  Monthly_Data1_Portfolio[1:12, i] = Monthly_Data1$Portfolio[x:y]}
+
+Monthly_stats_LC = data.frame(matrix(nrow=97, ncol = 6))
+Monthly_stats_Fix = data.frame(matrix(nrow=97, ncol=6))
+Monthly_stats_Portfolio = data.frame(matrix(nrow=97, ncol=6))
+colnames(Monthly_stats_LC) = c("year", "min", "max", "Mean", "STD_DEV", "Variance")
+colnames(Monthly_stats_Fix) = c("year", "min", "max", "Mean", "STD_DEV", "Variance")
+colnames(Monthly_stats_Portfolio) = c("year", "min", "max", "Mean", "STD_DEV", "Variance")
+Monthly_stats_LC$year = c(1926:2022)
+Monthly_stats_Fix$year = c(1926:2022)
+Monthly_stats_Portfolio$year = c(1926:2022)
+
+for(i in 1:97){
+    Monthly_stats_LC[i, 2] = min(Monthly_Data1_LC[, i])
+    Monthly_stats_Fix[i, 2] = min(Monthly_Data1_Fix[, i])
+    Monthly_stats_Portfolio[i, 2] = min(Monthly_Data1_Portfolio[, i])
+    Monthly_stats_LC[i, 3] = max(Monthly_Data1_LC[, i])
+    Monthly_stats_Fix[i, 3] = max(Monthly_Data1_Fix[, i])
+    Monthly_stats_Portfolio[i, 3] = max(Monthly_Data1_Portfolio[, i])
+    Monthly_stats_LC[i, 4] = sum(Monthly_Data1_LC[,i])
+    Monthly_stats_Fix[i, 4] = sum(Monthly_Data1_Fix[,i])
+    Monthly_stats_Portfolio[i, 4] = sum(Monthly_Data1_Portfolio[,i])
+    Monthly_stats_LC[i, 4] = Monthly_stats_LC[i, 4]/12
+    Monthly_stats_Fix[i, 4] = Monthly_stats_Fix[i, 4]/12
+    Monthly_stats_Portfolio[i, 4] = Monthly_stats_Portfolio[i, 4]/12
+    Monthly_stats_LC[i, 5] = sqrt(var(Monthly_Data1_LC[, i]))
+    Monthly_stats_Fix[i, 5] = sqrt(var(Monthly_Data1_Fix[, i]))
+    Monthly_stats_Portfolio[i, 5] = sqrt(var(Monthly_Data1_Portfolio[, i]))
+    Monthly_stats_LC[i, 6] = var(Monthly_Data1_LC[, i])
+    Monthly_stats_Fix[i, 6] = var(Monthly_Data1_Fix[, i])
+    Monthly_stats_Portfolio[i, 6] = var(Monthly_Data1_Portfolio[, i])}
+
+ggplot(data = Monthly_stats_LC, aes(x = year, y = Mean,color="Large Cap")) + geom_line() +
+geom_line(data = Monthly_stats_Fix, aes(x = year, y = Mean, color="Fixed")) +
+geom_line(data = Monthly_stats_Portfolio, aes(x = year, y = Mean, color="Portfolio")) + xlim(1926,2022)
+
+
+```
+
+```{r}
+# Fixed Statistics
+Fixed_stats = data.frame(matrix(nrow=102, ncol=7))
+colnames(Fixed_stats) = c("Spread", "Spread_num", "min", "max", "Mean", "STD_DEV", "Variance")
+Fixed_stats$Spread = colnames(Monthly_Fixed)[2:103]
+Fixed_stats$Spread_num = c(NA, seq(0,100,1))
+
+for(i in 1:102){
+    Fixed_stats[i, 3] = min(Monthly_Fixed[, i+1])
+    Fixed_stats[i, 4] = max(Monthly_Fixed[, i+1])
+    Fixed_stats[i, 5] = sum(Monthly_Fixed[,i+1])
+    Fixed_stats[i, 5] = Fixed_stats[i, 5]/1153
+    Fixed_stats[i, 6] = sqrt(var(Monthly_Fixed[, i+1]))
+    Fixed_stats[i, 7] = var(Monthly_Fixed[, i+1])}
+
+ggplot(data = Fixed_stats[2:102,], aes(x = Spread_num, y = Mean,color="red1")) + geom_line() +
+geom_line(data = Fixed_stats[2:102,], aes(x = Spread_num, y = Variance, color="red2")) +
+geom_line(data = Fixed_stats[2:102,], aes(x = Spread_num, y = STD_DEV, color="red3")) + ylim(0,0.2)
+
+
+# Large Cap Statistics
+
+LC_stats = data.frame(matrix(nrow=102, ncol=7))
+colnames(LC_stats) = c("Spread", "Spread_num", "min", "max", "Mean", "STD_DEV", "Variance")
+LC_stats$Spread = colnames(Monthly_LC)[2:103]
+LC_stats$Spread_num = c(NA, seq(0,100,1))
+
+
+for(i in 1:101){
+    LC_stats[i, 3] = min(Monthly_LC[, i+1])
+    LC_stats[i, 4] = max(Monthly_LC[, i+1])
+    LC_stats[i, 5] = sum(Monthly_LC[,i+1])
+    LC_stats[i, 5] = LC_stats[i, 5]/1153
+    LC_stats[i, 6] = sqrt(var(Monthly_LC[, i+1]))
+    LC_stats[i, 7] = var(Monthly_LC[, i+1])}
+
+ggplot(data = LC_stats[2:102,], aes(x = Spread_num, y = Mean, color="red1")) + geom_line() +
+geom_line(data = LC_stats[2:102,], aes(x = Spread_num, y = Variance, color="red2")) +
+geom_line(data = LC_stats[2:102,], aes(x = Spread_num, y = STD_DEV, color="red3")) + ylim(0, 0.2)
+
+
+# Portfolio Statistics
+
+Portfolio_stats = data.frame(matrix(nrow=101, ncol=7))
+colnames(Portfolio_stats) = c("Spread", "Spread_num", "min", "max", "Mean", "STD_DEV", "Variance")
+Portfolio_stats$Spread = colnames(Monthly_Portfolio)[2:102]
+Portfolio_stats$Spread_num = c(seq(0,100,1))
+
+
+for(i in 1:101){
+    Portfolio_stats[i, 3] = min(Monthly_Portfolio[, i+1])
+    Portfolio_stats[i, 4] = max(Monthly_Portfolio[, i+1])
+    Portfolio_stats[i, 5] = sum(Monthly_Portfolio[,i+1])
+    Portfolio_stats[i, 5] = Portfolio_stats[i, 5]/1153
+    Portfolio_stats[i, 6] = sqrt(var(Monthly_Portfolio[, i+1]))
+    Portfolio_stats[i, 7] = var(Monthly_Portfolio[, i+1])}
+
+
+ggplot(data = Portfolio_stats, aes(x = Spread_num, y = Mean), color="green") + geom_line() +
+geom_line(data = Portfolio_stats, aes(x = Spread_num, y = Variance), color="red") +
+geom_line(data = Portfolio_stats, aes(x = Spread_num, y = STD_DEV), color="blue") + ylim(0,0.2)
+
+ggplot(data = Fixed_stats[2:102,], aes(x = Spread_num, y = Mean, color="red1")) + geom_line() +
+geom_line(data = Fixed_stats[2:102,], aes(x = Spread_num, y = Variance, color="red2")) +
+geom_line(data = Fixed_stats[2:102,], aes(x = Spread_num, y = STD_DEV, color="red3")) +
+geom_line(data = LC_stats[2:102,], aes(x = Spread_num, y = Mean, color="blue1")) +
+geom_line(data = LC_stats[2:102,], aes(x = Spread_num, y = Variance, color="blue2")) +
+geom_line(data = LC_stats[2:102,], aes(x = Spread_num, y = STD_DEV, color="blue3"))
+
+ggplot(data = Fixed_stats[2:102,], aes(x = Spread_num, y = Mean, color="red1")) + geom_line() +
+geom_line(data = Fixed_stats[2:102,], aes(x = Spread_num, y = Variance, color="red2")) +
+geom_line(data = Fixed_stats[2:102,], aes(x = Spread_num, y = STD_DEV, color="red3")) +
+geom_line(data = LC_stats[2:102,], aes(x = Spread_num, y = Mean, color="blue1")) +
+geom_line(data = LC_stats[2:102,], aes(x = Spread_num, y = Variance, color="blue2")) +
+geom_line(data = LC_stats[2:102,], aes(x = Spread_num, y = STD_DEV, color="blue3")) +
+geom_line(data = Portfolio_stats, aes(x = Spread_num, y = Mean, color="green1")) +
+geom_line(data = Portfolio_stats, aes(x = Spread_num, y = Variance, color="green2")) +
+geom_line(data = Portfolio_stats, aes(x = Spread_num, y = STD_DEV, color="green3")) + ylim(0,0.2)
+
+
+```
+
+
+```{r}
+# Portfolio 60/40
+sig_loss1 = qnorm(0.05, mean = mean(Monthly_Data$Folio60), sd = sqrt(var(Monthly_Data$Folio60)), lower.tail = TRUE)
+sig_loss2 = qnorm(0.01, mean = mean(Monthly_Data$Folio60), sd = sqrt(var(Monthly_Data$Folio60)), lower.tail = TRUE)
+sig_loss3 = qnorm(0.001, mean = mean(Monthly_Data$Folio60), sd = sqrt(var(Monthly_Data$Folio60)), lower.tail = TRUE)
+sig_loss4 = qnorm(0.0001, mean = mean(Monthly_Data$Folio60), sd = sqrt(var(Monthly_Data$Folio60)), lower.tail = TRUE)
+
+significant_losses = subset(Monthly_Data, Monthly_Data$Folio60 <= sig_loss1)[c("Date", "Folio60")]
+require(zoo)
+significant_losses["Year"] <- year(significant_losses$Date)
+significant_losses["Month"] = months(significant_losses$Date)
+significant_losses$Month <- factor(significant_losses$Month, levels = rev(month.name))
+significant_losses$Year <- factor(significant_losses$Year, levels = unique(year(significant_losses$Date)))
+significant_losses["Probability"] = NA
+
+
+for(i in 1:54){
+  if(significant_losses$Folio60[i] < sig_loss1){
+    significant_losses$Probability[i] = "< 5%"}
+  if(significant_losses$Folio60[i] < sig_loss2){
+    significant_losses$Probability[i] = "< 1%"}
+  if(significant_losses$Folio60[i] < sig_loss3){
+    significant_losses$Probability[i] = "< 0.1%"}
+  if(significant_losses$Folio60[i] < sig_loss4){
+    significant_losses$Probability[i] = "< 0.01%"}}
+
+significant_losses$Probability <- factor(significant_losses$Probability, levels = c("< 5%", "< 1%", "< 0.1%", "< 0.01%"))
+
+significant_losses %>%
+  ggplot()+
+  geom_col(aes(x=abs(Folio60), y = Month, fill = Probability)) +
+  scale_x_continuous(breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5)) +
+  facet_wrap(~as.character(Year)) +
+  labs(title="12-Month Significant Losses on the 60/40 Portfolio",
+  x = "Investment Loss")+
+  scale_fill_manual(values  = c("< 5%" = "yellow",
+                                "< 1%" = "orange",
+                                "< 0.1%" = "orangered1",
+                                "< 0.01%" = "red2")) +
+  geom_text(aes(x = abs(Folio60), y = Month, label = round(abs(Folio60), 4)), hjust=1) +
+  theme(plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 15),
+        title =element_text(size=18, face='bold'),
+        legend.text = element_text(size = 12))
+
+
+# Fixed
+sig_Loss_FIX1 = qnorm(0.05, mean = mean(Monthly_Data$FIXED), sd = sqrt(var(Monthly_Data$FIXED)), lower.tail = TRUE)
+sig_Loss_FIX2 = qnorm(0.01, mean = mean(Monthly_Data$FIXED), sd = sqrt(var(Monthly_Data$FIXED)), lower.tail = TRUE)
+sig_Loss_FIX3 = qnorm(0.001, mean = mean(Monthly_Data$FIXED), sd = sqrt(var(Monthly_Data$FIXED)), lower.tail = TRUE)
+sig_Loss_FIX4 = qnorm(0.0001, mean = mean(Monthly_Data$FIXED), sd = sqrt(var(Monthly_Data$FIXED)), lower.tail = TRUE)
+
+significant_Losses_FIX = subset(Monthly_Data, Monthly_Data$FIXED <= sig_Loss_FIX1)[c("Date", "FIXED")]
+require(zoo)
+significant_Losses_FIX["Year"] <- year(significant_Losses_FIX$Date)
+significant_Losses_FIX["Month"] = months(significant_Losses_FIX$Date)
+significant_Losses_FIX$Month <- factor(significant_Losses_FIX$Month, levels = rev(month.name))
+significant_Losses_FIX$Year <- factor(significant_Losses_FIX$Year, levels = unique(year(significant_Losses_FIX$Date)))
+significant_Losses_FIX["Probability"] = NA
+
+for(i in 1:22){
+  if(significant_Losses_FIX$FIXED[i] < sig_Loss_FIX1){
+    significant_Losses_FIX$Probability[i] = "< 5%"}
+  if(significant_Losses_FIX$FIXED[i] < sig_Loss_FIX2){
+    significant_Losses_FIX$Probability[i] = "< 1%"}
+  if(significant_Losses_FIX$FIXED[i] < sig_Loss_FIX3){
+    significant_Losses_FIX$Probability[i] = "< 0.1%"}
+  if(significant_Losses_FIX$FIXED[i] < sig_Loss_FIX4){
+    significant_Losses_FIX$Probability[i] = "< 0.01%"}}
+
+significant_Losses_FIX$Probability <- factor(significant_Losses_FIX$Probability, levels = c("< 5%", "< 1%", "< 0.1%", "< 0.01%"))
+
+significant_Losses_FIX %>%
+  ggplot()+
+  geom_col(aes(x=abs(FIXED), y = Month, fill = Probability)) +
+  scale_x_continuous(breaks = c(0, 0.05, 0.10, 0.15)) +
+  facet_wrap(~as.character(Year)) +
+  labs(title="12-Month Significant Losses on the Blended Fixed Income Fund",
+  x = "Investment Loss")+
+  scale_fill_manual(values  = c("< 5%" = "yellow",
+                                "< 1%" = "orange",
+                                "< 0.1%" = "orangered1")) +
+  geom_text(aes(x = abs(FIXED), y = Month, label = round(abs(FIXED), 4)), hjust=1) +
+  theme(plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 15),
+        title =element_text(size=18, face='bold'),
+        legend.text = element_text(size = 12))
+
+
+# Fixed 60/40
+sig_Loss_FIX1a = qnorm(0.05, mean = mean(Monthly_Data$FIX60), sd = sqrt(var(Monthly_Data$FIX60)), lower.tail = TRUE)
+sig_Loss_FIX2a = qnorm(0.01, mean = mean(Monthly_Data$FIX60), sd = sqrt(var(Monthly_Data$FIX60)), lower.tail = TRUE)
+sig_Loss_FIX3a = qnorm(0.001, mean = mean(Monthly_Data$FIX60), sd = sqrt(var(Monthly_Data$FIX60)), lower.tail = TRUE)
+sig_Loss_FIX4a = qnorm(0.0001, mean = mean(Monthly_Data$FIX60), sd = sqrt(var(Monthly_Data$FIX60)), lower.tail = TRUE)
+
+significant_Losses_FIXa = subset(Monthly_Data, Monthly_Data$FIX60 <= sig_Loss_FIX1a)[c("Date", "FIX60")]
+require(zoo)
+significant_Losses_FIXa["Year"] <- year(significant_Losses_FIXa$Date)
+significant_Losses_FIXa["Month"] = months(significant_Losses_FIXa$Date)
+significant_Losses_FIXa$Month <- factor(significant_Losses_FIXa$Month, levels = rev(month.name))
+significant_Losses_FIXa$Year <- factor(significant_Losses_FIXa$Year, levels = unique(year(significant_Losses_FIXa$Date)))
+significant_Losses_FIXa["Probability"] = NA
+
+for(i in 1:22){
+  if(significant_Losses_FIXa$FIX60[i] < sig_Loss_FIX1a){
+    significant_Losses_FIXa$Probability[i] = "< 5%"}
+  if(significant_Losses_FIXa$FIX60[i] < sig_Loss_FIX2a){
+    significant_Losses_FIXa$Probability[i] = "< 1%"}
+  if(significant_Losses_FIXa$FIX60[i] < sig_Loss_FIX3a){
+    significant_Losses_FIXa$Probability[i] = "< 0.1%"}
+  if(significant_Losses_FIXa$FIX60[i] < sig_Loss_FIX4a){
+    significant_Losses_FIXa$Probability[i] = "< 0.01%"}}
+
+significant_Losses_FIXa$Probability <- factor(significant_Losses_FIXa$Probability, levels = c("< 5%", "< 1%", "< 0.1%", "< 0.01%"))
+
+significant_Losses_FIXa %>%
+  ggplot()+
+  geom_col(aes(x=abs(FIX60), y = Month, fill = Probability)) +
+  facet_wrap(~as.character(Year)) +
+  labs(title="12-Month Significant Losses on the Blended Fixed Income Fund for the 60/40 Portfolio",
+  x = "Investment Loss")+
+  scale_fill_manual(values  = c("< 5%" = "yellow",
+                                "< 1%" = "orange",
+                                "< 0.1%" = "orangered1")) +
+  geom_text(aes(x = abs(FIX60), y = Month, label = round(abs(FIX60), 4)), hjust=1) +
+  theme(plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 15),
+        title =element_text(size=18, face='bold'),
+        legend.text = element_text(size = 12))
+
+
+# Large Cap
+sig_Loss_LC1 = qnorm(0.05, mean = mean(Monthly_Data$`Large Cap TR`), sd = sqrt(var(Monthly_Data$`Large Cap TR`)), lower.tail = TRUE)
+sig_Loss_LC2 = qnorm(0.01, mean = mean(Monthly_Data$`Large Cap TR`), sd = sqrt(var(Monthly_Data$`Large Cap TR`)), lower.tail = TRUE)
+sig_Loss_LC3 = qnorm(0.001, mean = mean(Monthly_Data$`Large Cap TR`), sd = sqrt(var(Monthly_Data$`Large Cap TR`)), lower.tail = TRUE)
+sig_Loss_LC4 = qnorm(0.0001, mean = mean(Monthly_Data$`Large Cap TR`), sd = sqrt(var(Monthly_Data$`Large Cap TR`)), lower.tail = TRUE)
+
+significant_Losses_LC = subset(Monthly_Data, Monthly_Data$`Large Cap TR` <= sig_Loss_LC1)[c("Date", "Large Cap TR")]
+require(zoo)
+significant_Losses_LC["Year"] <- year(significant_Losses_LC$Date)
+significant_Losses_LC["Month"] = months(significant_Losses_LC$Date)
+significant_Losses_LC$Month <- factor(significant_Losses_LC$Month, levels = rev(month.name))
+significant_Losses_LC$Year <- factor(significant_Losses_LC$Year, levels = unique(year(significant_Losses_LC$Date)))
+significant_Losses_LC["Probability"] = NA
+
+for(i in 1:60){
+  if(significant_Losses_LC$`Large Cap TR`[i] < sig_Loss_LC1){
+    significant_Losses_LC$Probability[i] = "< 5%"}
+  if(significant_Losses_LC$`Large Cap TR`[i] < sig_Loss_LC2){
+    significant_Losses_LC$Probability[i] = "< 1%"}
+  if(significant_Losses_LC$`Large Cap TR`[i] < sig_Loss_LC3){
+    significant_Losses_LC$Probability[i] = "< 0.1%"}
+  if(significant_Losses_LC$`Large Cap TR`[i] < sig_Loss_LC4){
+    significant_Losses_LC$Probability[i] = "< 0.01%"}}
+
+significant_Losses_LC$Probability <- factor(significant_Losses_LC$Probability, levels = c("< 5%", "< 1%", "< 0.1%", "< 0.01%"))
+
+significant_Losses_LC %>%
+  ggplot()+
+  geom_col(aes(x=abs(`Large Cap TR`), y = Month, fill = Probability)) +
+  scale_x_continuous(breaks = c(0, 0.15, 0.30, 0.45, 0.60, 0.75)) +
+  facet_wrap(~as.character(Year)) +
+  labs(title="12-Month Significant Losses on Large Cap Equities",
+  x = "Investment Loss")+
+  scale_fill_manual(values  = c("< 5%" = "yellow",
+                                "< 1%" = "orange",
+                                "< 0.1%" = "orangered1",
+                                "< 0.01%" = "red2")) +
+  geom_text(aes(x = abs(`Large Cap TR`), y = Month, label = round(abs(`Large Cap TR`), 4)), hjust=1) +
+  theme(plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 15),
+        title =element_text(size=18, face='bold'),
+        legend.text = element_text(size = 12))
+
+
+# Large Cap 60/40
+sig_Loss_LC1a = qnorm(0.05, mean = mean(Monthly_Data$LC60), sd = sqrt(var(Monthly_Data$LC60)), lower.tail = TRUE)
+sig_Loss_LC2a = qnorm(0.01, mean = mean(Monthly_Data$LC60), sd = sqrt(var(Monthly_Data$LC60)), lower.tail = TRUE)
+sig_Loss_LC3a = qnorm(0.001, mean = mean(Monthly_Data$LC60), sd = sqrt(var(Monthly_Data$LC60)), lower.tail = TRUE)
+sig_Loss_LC4a = qnorm(0.0001, mean = mean(Monthly_Data$LC60), sd = sqrt(var(Monthly_Data$LC60)), lower.tail = TRUE)
+
+significant_Losses_LCa = subset(Monthly_Data, Monthly_Data$LC60 <= sig_Loss_LC1a)[c("Date", "LC60")]
+require(zoo)
+significant_Losses_LCa["Year"] <- year(significant_Losses_LCa$Date)
+significant_Losses_LCa["Month"] = months(significant_Losses_LCa$Date)
+significant_Losses_LCa$Month <- factor(significant_Losses_LCa$Month, levels = rev(month.name))
+significant_Losses_LCa$Year <- factor(significant_Losses_LCa$Year, levels = unique(year(significant_Losses_LCa$Date)))
+significant_Losses_LCa["Probability"] = NA
+
+for(i in 1:60){
+  if(significant_Losses_LCa$LC60[i] < sig_Loss_LC1a){
+    significant_Losses_LCa$Probability[i] = "< 5%"}
+  if(significant_Losses_LCa$LC60[i] < sig_Loss_LC2a){
+    significant_Losses_LCa$Probability[i] = "< 1%"}
+  if(significant_Losses_LCa$LC60[i] < sig_Loss_LC3a){
+    significant_Losses_LCa$Probability[i] = "< 0.1%"}
+  if(significant_Losses_LCa$LC60[i] < sig_Loss_LC4a){
+    significant_Losses_LCa$Probability[i] = "< 0.01%"}}
+
+significant_Losses_LCa$Probability <- factor(significant_Losses_LCa$Probability, levels = c("< 5%", "< 1%", "< 0.1%", "< 0.01%"))
+
+significant_Losses_LCa %>%
+  ggplot()+
+  geom_col(aes(x=abs(LC60), y = Month, fill = Probability)) +
+  scale_x_continuous(breaks = c(0, 0.1, 0.2, 0.3, 0.4, 0.5)) +
+  facet_wrap(~as.character(Year)) +
+  labs(title="12-Month Significant Losses on Large Cap Equities for the 60/40 Portfolio",
+  x = "Investment Loss")+
+  scale_fill_manual(values  = c("< 5%" = "yellow",
+                                "< 1%" = "orange",
+                                "< 0.1%" = "orangered1",
+                                "< 0.01%" = "red2")) +
+  geom_text(aes(x = abs(LC60), y = Month, label = round(abs(LC60), 4)), hjust=1) +
+  theme(plot.title = element_text(hjust = 0.5),
+        strip.text = element_text(size = 15),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size = 15),
+        title =element_text(size=18, face='bold'),
+        legend.text = element_text(size = 12))
+```
+
+
+
+
+
+```{r}
+# Annual Significant 60/40 Portfolio Losses
+annual_sig_Loss1 = qnorm(0.05, mean = mean(annual$Folio60), sd = sqrt(var(annual$Folio60)), lower.tail = TRUE)
+annual_significant_losses = subset(annual, annual$Folio60 <= annual_sig_Loss1)[c("Date", "Folio60")]
+colnames(annual_significant_losses)[1:2] = c("Year", "Total Return")
+annual_significant_losses = annual_significant_losses %>%
+  mutate("Probability" = paste0(100 * signif(pnorm(annual_significant_losses$`Total Return`, mean = mean(annual$Folio60), sd = sqrt(var(annual$Folio60)), lower.tail = TRUE), 4), "%"))
+annual_significant_losses
+
+
+# Annual Significant FIXED Losses
+annual_sig_Loss_FIX1 = qnorm(0.05, mean = mean(annual$FIXED), sd = sqrt(var(annual$FIXED)), lower.tail = TRUE)
+annual_significant_Losses_FIX = subset(annual, annual$FIXED <= annual_sig_Loss_FIX1)[c("Date", "FIXED")]
+colnames(annual_significant_Losses_FIX)[1:2] = c("Year", "Total Return")
+annual_significant_Losses_FIX = annual_significant_Losses_FIX %>%
+  mutate("Probability" = paste0(100 * signif(pnorm(annual_significant_Losses_FIX$`Total Return`, mean = mean(annual$Folio60), sd = sqrt(var(annual$Folio60)), lower.tail = TRUE), 4), "%"))
+annual_sig_Loss_FIX1
+
+
+# Annual Significant Large Cap Losses                
+annual_sig_Loss_LC1 = qnorm(0.05, mean = mean(annual$`Large Cap TR`), sd = sqrt(var(annual$`Large Cap TR`)), lower.tail = TRUE)
+annual_significant_losses_LC = subset(annual, annual$`Large Cap TR` <= annual_sig_Loss_LC1)[c("Date", "Large Cap TR")]
+colnames(annual_significant_losses_LC)[1:2] = c("Year", "Total Return")
+annual_significant_losses_LC = annual_significant_losses_LC %>%
+  mutate("Probability" = paste0(100 * signif(pnorm(annual_significant_losses_LC$`Total Return`, mean = mean(annual$`Large Cap TR`), sd = sqrt(var(annual$`Large Cap TR`)), lower.tail = TRUE), 4), "%"))
+annual_significant_losses_LC
+```
+
+
+
+```{r}
+Annual60 = subset(Monthly, months(Monthly$Date) == "January")[c("Date", "Alpha60")]
+colnames(Annual60) = c("Date", "TR")
+
+Monthly60 = Monthly[c("Date", "Alpha60")]
+colnames(Monthly60) = c("Date", "TR")
+
+
+for(i in 1:1153){
+  if(Monthly60$Alpha60[i] < -0.225){
+    Monthly60$line_color[i] = "red"}
+  if(Monthly60$Alpha60[i] > -0.225 & Monthly60$Alpha60[i] < -0.075){
+    Monthly60$line_color[i] = "redorange"}
+  if(Monthly60$Alpha60[i] > -0.075 & Monthly60$Alpha60[i] < 0.075){
+    Monthly60$line_color[i] = "orange"}
+  if(Monthly60$Alpha60[i] > 0.075 & Monthly60$Alpha60[i] < 0.225){
+    Monthly60$line_color[i] = "yelloworange"}
+  if(Monthly60$Alpha60[i] > 0.225 & Monthly60$Alpha60[i] < 0.3){
+    Monthly60$line_color[i] = "yellow"}
+  if(Monthly60$Alpha60[i] > 0.3){
+    Monthly60$line_color[i] = "green"}}
+
+Annual60 <- Annual60 %>%
+  mutate("Date" = year(Annual60$Date))
+
+
+
+line_color <- as.factor(c("1", "2", "3", "4", "5", "6", "7"))
+TR = Annual60$TR
+line_color[TR < -0.2] <- 1
+line_color[TR > -0.2 & TR < -0.1] <- 2
+line_color[TR > -0.1 & TR < 0] <- 3
+line_color[TR > 0 & TR < 0.1] <- 4
+line_color[TR > 0.1 & TR < 0.2] <- 5
+line_color[TR > 0.2 & TR < 0.3] <- 6
+line_color[TR > 0.3] <- 7
+Annual60["line_color"] <- line_color
+
+
+for(i in 1:97){
+  if(Annual60$Alpha60[i] < -0.2){
+    Annual60$line_color[i] = "red4"}
+  if(Annual60$Alpha60[i] > -0.2 & Annual60$Alpha60[i] < -0.1){
+    Annual60$line_color[i] = "redorange"}
+  if(Annual60$Alpha60[i] > -0.1 & Annual60$Alpha60[i] < 0){
+    Annual60$line_color[i] = "orange"}
+  if(Annual60$Alpha60[i] > 0 & Annual60$Alpha60[i] < 0.1){
+    Annual60$line_color[i] = "goldenrod1"}
+  if(Annual60$Alpha60[i] > 0.1 & Annual60$Alpha60[i] < 0.2){
+    Annual60$line_color[i] = "yellow"}
+  if(Annual60$Alpha60[i] > 0.2 & Annual60$Alpha60[i] < 0.3){
+    Annual60$line_color[i] = "greenyellow"}
+  if(Annual60$Alpha60[i] > 0.3){
+    Annual60$line_color[i] = "green"}}
+
+library(lubridate)
+
+ggplot2::ggplot(data = Annual60, aes(x=Date, y = Alpha60, color = line_color)) + geom_line(aes(group = 1)) + geom_point(data = Annual60, aes(x=Date, y = Alpha60, color = line_color)) + ylim(-0.3, 0.4)
+
+Annual60 <- Annual60 %>%
+  mutate(line_color = c(factor(Annual60$line_color)))
+
+
+ggplot(data = Annual60, aes(x=Date, y = Alpha60, color = line_color)) + geom_line(data = Annual60, aes(color = c(Alpha60 < -0.225, Alpha60 > -0.225 & Alpha60 < -0.075)))+ geom_point(data = Annual60, aes(color = c(Alpha60 < -0.225, Alpha60 > -0.225 & Alpha60 < -0.075))) + ylim(-0.3, 0.4)
+
+plot(x=Annual60$Date, y=Annual60$Alpha60, col = Annual60$line_color)
+
+
+
+myPlot = function(y, x,
+    colors=c("blue","red"),
+    xlab=deparse(substitute(x)),
+    ylab=deparse(substitute(y)), ...)
+{
+    n = length(x)
+    y.pos = y.neg = y
+    y.pos[y<0] = 0
+    y.neg[y>0] = 0
+    plot(y~x, type="n", xlab=xlab, ylab=ylab, ...)
+    grid()
+    polygon(c(x[1],x,x[n]),c(0,y.pos,0),col=colors[1],border=NA)
+    polygon(c(x[1],x,x[n]),c(0,y.neg,0),col=colors[2],border=NA)}
+
+myPlot(x = Annual60$Date, y = Annual60$Alpha60)
+
+ggplot2::ggplot(data = Annual60, aes(x=Date, y = Alpha60, color = line_color)) + geom_line(aes(group = 1)) + geom_point(data = Annual60, aes(x=Date, y = Alpha60, color = line_color)) + ylim(-0.3, 0.4)
+
+A = 
+plot(A~y2, data, type="h", lwd=2, col=c("blue","red")[1+(A<0)],xlab="Year")
+
+
+install.packages("RColorBrewer")
+library(RColorBrewer)
+my_colors = brewer.pal(7, "Set2") 
+
+clplot(x=(Monthly$Date), y=Monthly$Alpha60, main="", lwd=1, levels=c(-0.3, -0.15, 0, 0.15, 0.30, 0.45, 0.6), col=my_colors, showcuts=T , bty="n", ylim=c(-0.5,0.6))
+
+my_colors = c("red4", "orangered2", "yellow", "green", "blue")
+clplot(x=Annual60$Date, y=Annual60$Alpha60, main="", lwd=1, levels=c(-0.225, -0.075, 0.075, 0.225, 0.30), col=my_colors, showcuts=F , bty="n", ylim=c(-0.3,0.4), xlim = c(1925, 2025), xlab="Year", ylab="Total Return", title(main = "Annual 60/40 Total Returns"))
+
+
+for(i in 0:100){
+  alpha = i/100
+  for(j in 1:1153){
+    Monthly[j,i+4]= alpha*Monthly$LCTR[j] + (1-alpha)*Monthly$FIXED_TR[j]}}
+
+plot(xlab= "Alpha", x = 0:10 0, ylab="Total Return", y= Monthly[1153, 4:104], main = "All 2022 Total Returns", par(lty = 1))
+```
+
+```{r}
+Alpha = data.frame(matrix(nrow=101, ncol=6))
+colnames(Alpha) = c("Spread_Ratio", "min", "max", "Mean", "STD_DEV", "Std_29") 
+Alpha$Spread_Ratio = colnames(data)[4:104]
+
+for(i in 1:length(Alpha$Spread_Ratio)){
+    Alpha[i, 2] = min(data[, i+3])
+    Alpha[i, 3] = max(data[, i+3])
+    Alpha[i, 4] = sum(data[,i+3])
+    Alpha[i, 4] = Alpha[i, 4]/97
+    Alpha[i, 5] = sqrt(var(data[, i+3]))
+    Alpha[i, 6] = sqrt(var(data[29:97, i+3]))}
+
+
+Returns_30yr = c(2.755,
+2.954166667,
+3.0975,
+3.443333333,
+3.4825,
+4.078333333,
+4.119166667,
+3.941666667,
+4.055,
+4.073333333,
+4.186666667,
+4.223333333,
+4.694166667,
+4.9,
+5.345833333,
+6.1725,
+6.734166667,
+5.998333333,
+5.796666667,
+6.9875,
+7.983333333,
+8.213333333,
+7.944166667,
+7.725,
+8.544166667,
+9.316666667,
+11.43333333,
+13.56333333,
+12.66333333,
+11.25583333,
+12.43333333,
+10.70333333,
+7.69,
+8.609166667,
+8.936666667,
+8.401666667,
+8.619166667,
+8.085,
+7.675,
+6.579166667,
+7.409166667,
+6.8075,
+6.723333333,
+6.5675,
+5.531666667,
+5.913333333,
+5.88,
+5.4675,
+5.405833333,
+5.0325,
+5.1,
+4.520833333,
+4.873333333,
+4.796666667,
+4.218333333,
+4.095,
+4.180833333,
+3.884166667,
+2.8825,
+3.459166667,
+3.269166667,
+2.818333333,
+2.58,
+2.886666667,
+3.095,
+2.525,
+1.51,
+2.0475,
+3.161666667
+)
+
+Returns_30yr=Returns_30yr/100
+
+x = 1954:2022
+
+frame = data.frame(matrix(ncol=102, nrow=69))
+frame[,1] = c(seq(1954,2022))
+for(i in 4:104){
+  for(j in 29:97){
+    z = data[j,i] - Returns_30yr[j-28]
+    frame[j-28, i-2] = z/Alpha$Std_29[i-3]}}
+
+  
+
+vect = vector()
+for(i in 2:102){
+  vect = append(vect, mean(frame[, i]))}
+
+
+plot(x = 0:100, y = vect, main = "Historic Sharpe Ratio", ylab="Sharpe Ratio", xlab="alpha", type = "l")
+
+# Conditional Expectation of total return given it will be positive
+Alpha["E[TR | TR > 0]"]=NA
+
+for(i in 4:104){
+  y = data.frame(data[,c(1,i)])
+  y = y %>% arrange(y[,2])
+  colnames(y) = c(paste0("Date",i-4), paste0(i-4, "/", 104-i))
+  y = subset(y, y[,2] > 0)
+  Alpha$`E[TR | TR > 0]`[i-3] = mean(y[,2])}
+
+
+Alpha["E[TR | TR < 0]"]=NA
+
+for(i in 4:104){
+  y = data.frame(data[,c(1,i)])
+  y = y %>% arrange(y[,2])
+  colnames(y) = c(paste0("Date",i-4), paste0(i-4, "/", 104-i))
+  y = subset(y, y[,2] < 0)
+  Alpha$`E[TR | TR < 0]`[i-3] = mean(y[,2])}
+
+
+for(i in 4:104){
+  y = data.frame(data[,c(1,i)])
+  y = y %>% arrange(y[,2])
+  colnames(y) = c(paste0("Date",i-4), paste0(i-4, "/", 104-i))
+  y = subset(y, y[,2] > 0)
+  Alpha$`SD[TR | TR > 0]`[i-3] = sqrt(var(y[,2]))}
+
+for(i in 4:104){
+  y = data.frame(data[,c(1,i)])
+  y = y %>% arrange(y[,2])
+  colnames(y) = c(paste0("Date",i-4), paste0(i-4, "/", 104-i))
+  y = subset(y, y[,2] < 0)
+  Alpha$`SD[TR | TR < 0]`[i-3] = sqrt(var(y[,2]))}
+
+  
+library("plotrix")
+
+Alpha = Alpha %>%
+  mutate("Z-Score" = (0 - Alpha$Mean)/Alpha$STD_DEV)
+
+Alpha = Alpha %>%
+  mutate("P(TR > 0)" = pnorm(Alpha$`Z-Score`, lower.tail = FALSE))
+
+Alpha = Alpha %>%
+  mutate("Z-Score2" = (-0.16 - Alpha$Mean)/Alpha$STD_DEV)
+
+Alpha = Alpha %>%
+  mutate("P(TR > -0.16)" = pnorm(Alpha$`Z-Score2`, lower.tail = FALSE))
+
+x = (Alpha$`P(TR > -0.16)`[82] - 0.95)
+y = x/Alpha$`P(TR > -0.16)`[83]
+y
+
+plot(x = 0:100, y = Alpha$`P(TR > 0)`, type = "l")
+
+plot(x = 0:100, y = Alpha$`P(TR > -0.16)`, type = "l")
+abline(h=0.95, col="red")
+
+qnorm(0.95, lower.tail = TRUE)
+
+Alpha["E[TR]"]=NA
+for(i in 1:101){
+  Alpha$`E[TR]` = (Alpha$`P(TR > 0)`[i] * Alpha$`E[TR | TR > 0]`[i]) + ((1 - Alpha$`P(TR > 0)`[i]) * Alpha$`E[TR | TR < 0]`[i])}
+
+plot(x = 0:100, y = Alpha$`P(TR > 0)`, xlab="Alpha(Large Cap %)", ylab="Probability", main = "Probability Total Returns are Positive")
+
+
+
+
+weighted_TR <- read_excel("Pension Investment Calculation (Annual) MRP600 Sim.xlsx", 
+    sheet = "Weighted TR", col_names = FALSE)
+vect0 = vector()
+for(i in 1:length(colnames(weighted_TR))){
+  for(j in 1:length(weighted_TR$...1)){
+    vect0 = append(vect0, weighted_TR[j,i])
+  }
+}
+sum = 0
+for(i in 1:30000){
+  sum = sum + vect0[[i]]}
+mean = sum/30000
+mean
+list1 = list(rep(NA, 30000))
+for(i in 1:30000){
+  list1[i] = vect0[[i]]}
+
+list1 = data.frame(list1)
+list1 = data.frame(t(list1))
+
+sum1 = sum(list1$t.list1.[1:10000])
+mean1 = sum1/10000
+sd1 = sqrt(var(list1$t.list1.[1:10000]))
+diff1 = -0.16-mean1
+z_score1 = diff1/sd1
+pnorm(z_score1, lower.tail=TRUE)
+
+sd = sqrt(var(list1$t.list1.))
+diff = -0.16 - mean 
+z_score = diff/sd
+pnorm(z_score, lower.tail=TRUE)
+
+
+Conf = Alpha[c(1,4,5,7:10,12:13)]
+Conf = Conf %>%
+  mutate("+lower" = Conf$`E[TR | TR > 0]` - 1.96*Conf$`SD[TR | TR > 0]`)
+
+Conf = Conf %>%
+  mutate("+upper" = Conf$`E[TR | TR > 0]` + 1.96*Conf$`SD[TR | TR > 0]`)
+
+
+plotCI(x = 0:100, y = Conf$`E[TR | TR > 0]`, li = Conf$`+lower`, ui = Conf$`+upper`, main="CI Assuming TR > 0", ylab="Total Return", xlab="alpha")
+abline(v = 59, col = "red", lty = "dashed")
+abline(h = max(Conf$`+lower`), col = "red", lty = "dashed")
+mtext("max(lower bound) @ 59", side=3, line = -1, adj = 0.1, cex=.7)
+
+library(ggplot2)
+
+df = data.frame(matrix(ncol=3, nrow=9797))
+for(i in 0:100){
+  x = i*97 + 1
+  y = (1+i)*97
+  df[x:y, 1] = data[,i+4]
+  df[x:y, 2] = paste0(colnames(data)[i+4])}
+
+Alpha[c("Spread_Ratio", "min", "max")][97:101,]
+
+ggplot2::ggplot(data = df[1:1552,], mapping = aes(x=X1), freq=FALSE) + 
+  geom_histogram(binwidth=0.025)+
+  geom_density(col="red") +
+  scale_x_continuous(name = "Total Returns",
+                     breaks = seq(-0.15, 0.35, 0.1),
+                     limits=c(-0.15, 0.35)) +
+  scale_y_continuous(name = "Frequency") +
+  ggtitle("Histograms w/ Varying Alpha") +
+  scale_fill_gradient("Count", low = "blue", high = "red") +
+  geom_vline(aes(xintercept = mean(df$X1), group = X2), size = 1, colour = "#FF3721",
+                   linetype = "dashed") +
+  facet_wrap(~X2) + 
+  geom_line(aes(y = mean(df$X1)))+
+  theme(strip.text = element_text(size = 10),
+        axis.text = element_text(size=10),
+        strip.background = element_rect())
+
+ggplot2::ggplot(data = df[1553:3104,], mapping = aes(x=X1), freq=FALSE) + 
+  geom_histogram(binwidth=0.025)+
+  geom_density(col="red") +
+  scale_x_continuous(name = "Total Returns",
+                     breaks = seq(-0.15, 0.35, 0.1),
+                     limits=c(-0.15, 0.35)) +
+  scale_y_continuous(name = "Frequency") +
+  scale_fill_gradient("Count", low = "blue", high = "red") +
+  geom_vline(aes(xintercept = mean(df$X1), group = X2), size = 1, colour = "#FF3721",
+                   linetype = "dashed") +
+  facet_wrap(~X2) + 
+  geom_line(aes(y = mean(df$X1)))+
+  theme(strip.text = element_text(size = 10),
+        axis.text = element_text(size=10),
+        strip.background = element_rect())
+
+
+ggplot2::ggplot(data = df[3105:4656,], mapping = aes(x=X1), freq=FALSE) + 
+  geom_histogram(binwidth=0.025)+
+  geom_density(col="red") +
+  scale_x_continuous(name = "Total Returns",
+                     breaks = seq(-0.25, 0.35, 0.1),
+                     limits=c(-0.25, 0.35)) +
+  scale_y_continuous(name = "Frequency") +
+  scale_fill_gradient("Count", low = "blue", high = "red") +
+  geom_vline(aes(xintercept = mean(df$X1), group = X2), size = 1, colour = "#FF3721",
+                   linetype = "dashed") +
+  facet_wrap(~X2) + 
+  geom_line(aes(y = mean(df$X1)))+
+  theme(strip.text = element_text(size = 10),
+        axis.text = element_text(size=9),
+        strip.background = element_rect())
+
+ggplot2::ggplot(data = df[4657:6208,], mapping = aes(x=X1), freq=FALSE) + 
+  geom_histogram(binwidth=0.025)+
+  geom_density(col="red") +
+  scale_x_continuous(name = "Total Returns",
+                     breaks = seq(-0.3, 0.4, 0.15),
+                     limits=c(-0.3, 0.4)) +
+  scale_y_continuous(name = "Frequency") +
+  scale_fill_gradient("Count", low = "blue", high = "red") +
+  geom_vline(aes(xintercept = mean(df$X1), group = X2), size = 1, colour = "#FF3721",
+                   linetype = "dashed") +
+  facet_wrap(~X2) + 
+  geom_line(aes(y = mean(df$X1)))+
+  theme(strip.text = element_text(size = 10),
+        axis.text = element_text(size=10),
+        strip.background = element_rect())
+
+ggplot2::ggplot(data = df[6209:7760,], mapping = aes(x=X1), freq=FALSE) + 
+  geom_histogram(binwidth=0.025)+
+  geom_density(col="red") +
+  scale_x_continuous(name = "Total Returns",
+                     breaks = seq(-0.35, 0.45, 0.15),
+                     limits=c(-0.35, 0.45)) +
+  scale_y_continuous(name = "Frequency") +
+  scale_fill_gradient("Count", low = "blue", high = "red") +
+  geom_vline(aes(xintercept = mean(df$X1), group = X2), size = 1, colour = "#FF3721",
+                   linetype = "dashed") +
+  facet_wrap(~X2) + 
+  geom_line(aes(y = mean(df$X1)))+
+  theme(strip.text = element_text(size = 10),
+        axis.text = element_text(size=10),
+        strip.background = element_rect())
+
+ggplot2::ggplot(data = df[7761:9312,], mapping = aes(x=X1), freq=FALSE) + 
+  geom_histogram(binwidth=0.05)+
+  geom_density(col="red") +
+  scale_x_continuous(name = "Total Returns",
+                     breaks = seq(-0.45, 0.55, 0.2),
+                     limits=c(-0.45, 0.55)) +
+  scale_y_continuous(name = "Frequency") +
+  scale_fill_gradient("Count", low = "blue", high = "red") +
+  geom_vline(aes(xintercept = mean(df$X1), group = X2), size = 1, colour = "#FF3721",
+                   linetype = "dashed") +
+  facet_wrap(~X2) + 
+  geom_line(aes(y = mean(df$X1)))+
+  theme(strip.text = element_text(size = 10),
+        axis.text = element_text(size=10),
+        strip.background = element_rect())
+
+ggplot2::ggplot(data = df[9313:9797,], mapping = aes(x=X1), freq=FALSE) + 
+  geom_histogram(binwidth=0.05)+
+  geom_density(col="red") +
+  scale_x_continuous(name = "Total Returns",
+                     breaks = seq(-0.45, 0.55, 0.2),
+                     limits=c(-0.45, 0.55)) +
+  scale_y_continuous(name = "Frequency") +
+  scale_fill_gradient("Count", low = "blue", high = "red") +
+  geom_vline(aes(xintercept = mean(df$X1), group = X2), size = 1, colour = "#FF3721",
+                   linetype = "dashed") +
+  facet_wrap(~X2) + 
+  geom_line(aes(y = mean(df$X1)))+
+  theme(strip.text = element_text(size = 10),
+        axis.text = element_text(size=10),
+        strip.background = element_rect())
+
+
+
+
+```
+
+
+
+
+```{r}
+library(readxl)
+data2 <- read_excel("Project 2 Historical Data.xlsx", 
+    range = "A1186:P1283")
+
+colnames(data2) = c("Year",	"Ibbotson® SBBI® US Large-Cap Stocks (Total Return)", "Ibbotson® SBBI® US Large-Cap Stocks (Income Return)",	"Ibbotson® SBBI® US Large-Cap Stocks (Capital Appreciation  Return)",	"Ibbotson® SBBI® US Small-Cap Stocks (Total Return)",	"Ibbotson® SBBI® US Long-term (20-Year) Corporate Bonds (Total Return)",	"Ibbotson® SBBI® US Long-term (20-Year) Government Bonds (Total Return)",	"Ibbotson® SBBI® US Long-term (20-Year) Government Bonds (Income Return)",	"Ibbotson® SBBI® US Long-term (20-Year) Government Bonds (Capital Appreciation Return)",	"Ibbotson® SBBI® US Long-term (20-Year)  Government Bonds (Yield)",	"Ibbotson® SBBI® US Intermediate-term (5-Year) Government Bonds (Total Return)",	"Ibbotson® SBBI® US Intermediate-term (5-Year) Government Bonds (Income Return)",	"Ibbotson® SBBI® US Intermediate-term (5-Year) Government Bonds (Capital Appreciation Return)",	"Ibbotson® SBBI® US Intermediate-term (5-Year) Government Bonds (Yield)",	"Ibbotson® SBBI® US (30-Day) Treasury Bills",	"Ibbotson® SBBI® US Inflation")
+
+data2 = data2[, c(1,2,6,7,11)]
+
+data2["Large_Cap"] = NA
+for(i in 1:97){
+  data2$Large_Cap[i] = data2$`Ibbotson® SBBI® US Large-Cap Stocks (Total Return)`[i] + data2$`Ibbotson® SBBI® US Long-term (20-Year) Government Bonds (Total Return)`[i]
+}
+  
+data2 = data2 %>%
+  mutate("Large_Cap" =data2[,2]+data2[,4])
+
+
+Conf2 = data.frame(matrix(nrow=97, ncol=102))
+colnames(Conf2) = c("Year", colnames(data)[4:104])
+
+
+
+
+
+for(i in 0:100){
+  alpha = i
+  alpha=alpha/100
+  for(j in 1:97){
+    long_corp = (1-alpha) * 0.35 * data2$`Ibbotson® SBBI® US Long-term (20-Year) Corporate Bonds (Total Return)`[j]
+    intermediate_gov = (1-alpha) * 0.65 * data2$`Ibbotson® SBBI® US Intermediate-term (5-Year) Government Bonds (Total Return)`[j]
+    Large_Cap = alpha * data2$`Ibbotson® SBBI® US Large-Cap Stocks (Total Return)`[j]
+    TR = long_corp+intermediate_gov+Large_Cap
+    Conf2[j, i+2] = TR}}
+Conf2$Year = data2$Year
+
+
+vect2 = vector()
+for(i in 2:102){
+  vect2 = append(vect2, mean(Conf2[,i]))}
+plot(x=0:100, y = vect2)
+
+
+
+data3 = data.frame(matrix(nrow=70, ncol=102))
+colnames(data3) = c("Year", colnames(data)[4:104])
+data3$Year[1:68] = data$Date[1:68]
+data3$Year[69] = "mean(Interest Compounded Annually)"
+data3$Year[70] = "sd(Interest Compounded Annually)"
+for(i in 4:104){
+  for(j in 1:68){
+    prod = 1
+    y = j+29
+    x = data[j:y, i]
+    x = x + 1
+    for(k in 1:30){
+      prod = prod * x[k,1]}
+  data3[j,i-2] = prod^(1/30)-1}}
+
+for(i in 2:102){
+  x = data3[,i][1:68]
+  sum = 0
+  for(j in 1:length(x)){
+    sum = sum + x[j]}
+  mean = sum/68
+    data3[69, i] = mean
+    data3[70, i] = sqrt(var(x))}
+
+Sharpe_Ratio = data.frame(matrix(nrow=101, ncol = 2))
+colnames(Sharpe_Ratio) = c("Alpha", "Sharpe_Ratio")
+Sharpe_Ratio[,1] = colnames(data3)[2:102]
+for(i in 0:100){
+  diff = data3[69, i+2] - .05
+  ratio = diff/data3[70, i+2]
+  Sharpe_Ratio[i+1, 2] = ratio}
+
+
+
+
+```
+
+

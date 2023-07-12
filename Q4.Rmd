@@ -1,0 +1,2327 @@
+---
+title: "Untitled"
+author: "Dylan Berneman"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+
+Monthly_Data <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Monthly", range = "B10:D1174")
+
+Monthly_Data1 <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Monthly", range = "B10:D1174")
+
+Monthly_Data[c(2,3)] = 1 + Monthly_Data[c(2,3)] 
+
+vect0 = vector()
+for(i in 0:100){
+  vect0 = append(vect0, paste0("Folio ", i, "/",100-i))
+}
+
+# 12-month returns
+for(i in 1:805){
+  x=i
+  y=x+359
+  Monthly_Data$`Large Cap TR`[i] = prod(Monthly_Data$`Large Cap TR`[x:y])-1
+  Monthly_Data$FIXED[i] = prod(Monthly_Data$FIXED[x:y])-1}
+
+
+Monthly_Data = Monthly_Data[1:805,]
+
+# 12-month allocation returns
+for(i in 0:100){
+  alpha = i/100
+  Monthly_Data[paste0("Folio", i)] = NA
+  for(j in 1:805){
+    Monthly_Data[j, i+4] = alpha*Monthly_Data$`Large Cap TR`[j] + (1-alpha)*Monthly_Data$FIXED[j]}}
+
+
+# # Annual Allocation returns
+# for(i in 0:100){
+#   alpha = i/100
+#   Data[paste0("Folio", i)] = NA
+#   for(j in 1:97){
+#     Data[j, length(colnames(Data))] = alpha*Data$LCTR_true[j] + (1-alpha)*Data$FIXED_true[j]}}
+
+# Annual from Monthly
+annual = data.frame(matrix(ncol=102,nrow=97))
+colnames(annual) = colnames(Monthly_Data)[c(1, 4:104)]
+x=1
+for(i in 1:1153){
+  if((i-1)%%359 ==0){
+    annual[x,] = Monthly_Data[i,c(1,4:104)]
+    annual[x,1] = year(Monthly_Data$Date[i])
+    x = x + 1}}
+
+# IB
+IB <- read_excel("Project 2 Historical Data.xlsx",
+    range = "AO11:AR1175", col_types = c("numeric",
+        "skip", "skip", "numeric"))
+
+IB["Date"] = Monthly_Data1$Date 
+IB = IB[,c(3,1:2)]
+IB_plus1 = IB
+IB_plus1[,2:3] = 1 + IB_plus1[,2:3]
+colnames(IB) = c("Date", "t_bill", "inflation")
+IB_Monthly_cmp12 = IB
+IB_Monthly_cmp12 = IB_Monthly_cmp12[1:1153,]
+IB_Monthly_cmp12[,2:3]=NA
+for(j in 2:3){
+  for(i in 1:805){
+    x=i
+    y1=x+359
+    IB_Monthly_cmp12[i,j] = prod(IB_plus1[x:y1, j])-1}}
+
+IB_annual_cmp12 = IB_Monthly_cmp12[1:97,]
+x=1
+for(i in 1:805){
+  if((i-1)%%359==0){
+    IB_annual_cmp12[x,] = IB_Monthly_cmp12[i,]
+    x=x+1}}
+
+Annual_IB_Data_a = IB_annual_cmp12
+colnames(Annual_IB_Data_a) = colnames(IB_annual_cmp12)
+Annual_IB_Data_g = Annual_IB_Data_a
+
+# Mean
+Mean = annual
+colnames(Mean)[2:102] = vect0
+Mean1 = Mean
+Mean1[,2:102] = Mean1[,2:102]+1
+arith = Mean[1:68,]
+# arith mean
+arith[, c(2:102)] = NA
+# arith sharpe
+arith1 = arith
+arith11 = arith
+# arith risk reward ratio
+arith_rrr = arith
+# geom mean
+Geom = arith
+# geom sharpe
+Geom1 = arith
+Geom11 = arith
+# geom risk reward ratio
+Geom_rrr = arith
+
+IB_annual_cmp12_g = IB_annual_cmp12
+IB_annual_cmp12_g[,2:3] = 1 + IB_annual_cmp12_g[,2:3]
+
+for(i in 1:2){
+  for(j in 1:68){
+    x=j
+    y=x+29
+    Annual_IB_Data_a[j, i+1] = sum(IB_annual_cmp12[x:y, i+1])/30
+    Annual_IB_Data_g[j, i+1] = prod(IB_annual_cmp12_g[x:y, i+1])^(1/30)-1}}
+
+Annual_IB_Data_a = Annual_IB_Data_a %>%
+  mutate("diff" = Annual_IB_Data_a$t_bill - Annual_IB_Data_a$inflation)
+
+Annual_IB_Data_g = Annual_IB_Data_g %>%
+  mutate("diff" = Annual_IB_Data_g$t_bill - Annual_IB_Data_g$inflation)
+
+for(i in 0:100){
+  for(j in 1:68){
+    x=j
+    y=x+29
+    arith[j,i+2] = mean(Mean[x:y, i+2])
+    Geom[j,i+2] = (prod(Mean1[x:y, i+2]))^(1/30)-1}}
+
+
+arith_CI = arith
+Geom_CI = Geom
+
+for(i in 0:100){
+  for(j in 1:68){
+    x=j
+    y=x+29
+    std = sqrt(var(Mean[x:y, i+2]))
+    name = paste0("CI", i)
+    arith_CI[j, i+2] = arith[j, i+2] - 1.96*std
+    arith_rrr[j, i+2] = std/arith[j, i+2]
+    arith1[j, i+2] = arith[j, i+2] - Annual_IB_Data_a$diff[j]
+    arith1[j, i+2] = arith1[j, i+2]/std
+    arith11[j, i+2] = arith[j, i+2] - Annual_IB_Data_a$t_bill[j]
+    arith11[j, i+2] = arith11[j, i+2]/std
+    Geom_CI[j, i+2] = Geom[j, i+2] - 1.96*std
+    Geom_rrr[j, i+2] = std/Geom[j, i+2]
+    Geom1[j, i+2] = Geom[j, i+2] - Annual_IB_Data_g$diff[j]
+    Geom1[j, i+2] = Geom1[j, i+2]
+    Geom11[j, i+2] = Geom[j, i+2] - Annual_IB_Data_g$t_bill[j]
+    Geom11[j, i+2] = Geom11[j, i+2]/std}}
+
+
+
+
+total = Mean1
+total = total[1:68,]
+total[,2:102]=NA
+total_rrr = total
+total_sharpe1 = total
+total_sharpe2 = total
+for(i in 0:100){
+  for(j in 1:68){
+    x=j
+    y=x+29
+    std = sd(Mean1[x:y, i+2])
+    total[j,i+2] = (prod(Mean1[x:y, i+2]))
+    total_sharpe1[j,i+2] = (((prod(Mean1[x:y, i+2])) - prod(IB_plus1[x:y, 2]) + prod(IB_plus1[x:y, 3]))/std)^(1/30)
+    total_sharpe2[j,i+2] = (((prod(Mean1[x:y, i+2])) - prod(IB_plus1[x:y, 2]))/std)^(1/30)
+    total_rrr[j,i+2]= (total[j,i+2]/std)^(1/30)}}
+
+stats = data.frame(matrix(nrow=101, ncol = 26))
+colnames(stats) = c("Allocation", "Spread_num", "arith_Mean", "arith_STD_DEV", "arith_Sharpe1", "arith_Sharpe1_std", "arith_Sharpe2", "arith_Sharpe2_std", "arith_RRR",  "arith_RRR_std", "Geom_Mean", "Geom_STD_DEV", "Geom_Sharpe1", "Geom_Sharpe1_std", "Geom_Sharpe2", "Geom_Sharpe2_std", "Geom_RRR",  "Geom_RRR_std", "Total_Return", "Total_Return_std", "Total_Sharpe1", "Total_Sharpe1_std", "Total_Sharpe2", "Total_Sharpe2_std", "Total_RRR", "Total_RRR_std")
+stats$Spread_num = c(seq(0,100,1))
+Allocation = vector()
+for(i in 0:100){
+  Allocation = append(Allocation, paste0("Large Cap = ", i, "%, Fixed = ", 100-i, "%"))}
+stats$Allocation = c(Allocation)
+
+# Stats
+for(i in 0:100){
+  stats$arith_Mean[i+1] = sum(arith[,i+2])/68
+  stats$arith_STD_DEV[i+1] = sqrt(var(arith[, i+2]))
+  stats$arith_Sharpe1[i+1] = sum(arith1[,i+2])/68
+  stats$arith_Sharpe2[i+1] = sum(arith11[,i+2])/68
+  stats$arith_Sharpe1_std[i+1] = sqrt(var(arith1[,i+2]))
+  stats$arith_Sharpe2_std[i+1] = sqrt(var(arith11[,i+2]))
+  stats$arith_RRR[i+1] = sum(arith_rrr[,i+2])/68
+  stats$arith_RRR_std[i+1] = sqrt(var(arith_rrr[,i+2]))
+  stats$Geom_Mean[i+1] = sum(Geom[,i+2])/68
+  stats$Geom_STD_DEV[i+1] = sqrt(var(Geom[, i+2]))
+  stats$Geom_Sharpe1[i+1] = sum(Geom1[,i+2])/68
+  stats$Geom_Sharpe2[i+1] = sum(Geom11[,i+2])/68
+  stats$Geom_Sharpe1_std[i+1] = sqrt(var(Geom1[,i+2]))
+  stats$Geom_Sharpe2_std[i+1] = sqrt(var(Geom11[,i+2]))
+  stats$Geom_RRR[i+1] = sum(Geom_rrr[,i+2])/68
+  stats$Geom_RRR_std[i+1] = sqrt(var(Geom_rrr[,i+2]))
+  stats$Total_Return[i+1] = sum(total[, i+2])/68
+  stats$Total_Return_std[i+1] = sqrt(var(total[, i+2]))
+  stats$Total_RRR[i+1] = sum(total_rrr[, i+2])/68
+  stats$Total_RRR_std[i+1] = sqrt(var(total_rrr[, i+2]))
+  stats$Total_Sharpe1[i+1] = sum(total_sharpe1[, i+2])/68
+  stats$Total_Sharpe1_std[i+1] = sqrt(var(total_sharpe1[, i+2]))
+  stats$Total_Sharpe2[i+1] = sum(total_sharpe2[, i+2])/68
+  stats$Total_Sharpe2_std[i+1] = sqrt(var(total_sharpe2[, i+2]))}
+
+
+stats2 = data.frame(matrix(nrow=101, ncol = 28))
+colnames(stats2) = c("Allocation", "Spread_num", "arith_CI", "arith_CI2", "arith_Sharpe1_CI", "arith_Sharpe1_CI2", "arith_Sharpe2_CI", "arith_Sharpe2_CI2", "arith_RRR_CI", "arith_RRR_CI2", "Geom_CI", "Geom_CI2", "Geom_Sharpe1_CI", "Geom_Sharpe1_CI2", "Geom_Sharpe2_CI", "Geom_Sharpe2_CI2", "Geom_RRR_CI", "Geom_RRR_CI2", "Total_Return_CI", "Total_Return_CI2", "Total_Sharpe1_CI", "Total_Sharpe1_CI2", "Total_Sharpe2_CI", "Total_Sharpe2_CI2", "Total_RRR_CI", "Total_RRR_CI2", "Prob", "Prob2")
+stats2[,1:2] = stats[, 1:2]
+
+# Stats
+for(i in 0:100){
+  stats2$arith_CI[i+1] = stats$arith_Mean[i+1] - 1.96 * stats$arith_STD_DEV[i+1]
+  stats2$arith_CI2[i+1] = stats$arith_Mean[i+1] + 1.96 * stats$arith_STD_DEV[i+1]
+  stats2$arith_Sharpe1_CI[i+1] = stats$arith_Sharpe1[i+1] - 1.96 * stats$arith_Sharpe1_std[i+1]
+  stats2$arith_Sharpe1_CI2[i+1] = stats$arith_Sharpe1[i+1] + 1.96 * stats$arith_Sharpe1_std[i+1]
+  stats2$arith_Sharpe2_CI[i+1] = stats$arith_Sharpe2[i+1] - 1.96 * stats$arith_Sharpe2_std[i+1]
+  stats2$arith_Sharpe2_CI2[i+1] = stats$arith_Sharpe2[i+1] + 1.96 * stats$arith_Sharpe2_std[i+1]
+  stats2$arith_RRR_CI[i+1] = stats$arith_RRR[i+1] - 1.96 * stats$arith_RRR_std[i+1]
+  stats2$arith_RRR_CI2[i+1] = stats$arith_RRR[i+1] + 1.96 * stats$arith_RRR_std[i+1]
+  stats2$Geom_CI[i+1] = stats$Geom_Mean[i+1] - 1.96 * stats$Geom_STD_DEV[i+1]
+  stats2$Geom_CI2[i+1] = stats$Geom_Mean[i+1] + 1.96 * stats$Geom_STD_DEV[i+1]
+  stats2$Geom_Sharpe1_CI[i+1] = stats$Geom_Sharpe1[i+1] - 1.96 * stats$Geom_Sharpe1_std[i+1]
+  stats2$Geom_Sharpe1_CI2[i+1] = stats$Geom_Sharpe1[i+1] + 1.96 * stats$Geom_Sharpe1_std[i+1]
+  stats2$Geom_Sharpe2_CI[i+1] = stats$Geom_Sharpe2[i+1] - 1.96 * stats$Geom_Sharpe2_std[i+1]
+  stats2$Geom_Sharpe2_CI2[i+1] = stats$Geom_Sharpe2[i+1] + 1.96 * stats$Geom_Sharpe2_std[i+1]
+  stats2$Geom_RRR_CI[i+1] = stats$Geom_RRR[i+1] - 1.96 * stats$Geom_RRR_std[i+1]
+  stats2$Geom_RRR_CI2[i+1] = stats$Geom_RRR[i+1] + 1.96 * stats$Geom_RRR_std[i+1]
+  stats2$Total_Return_CI[i+1] = stats$Total_Return[i+1] - 1.96 * stats$Total_Return_std[i+1]
+  stats2$Total_Return_CI2[i+1] = stats$Total_Return[i+1] + 1.96 * stats$Total_Return_std[i+1]
+  stats2$Total_RRR_CI[i+1] = stats$Total_RRR[i+1] - 1.96 * stats$Total_RRR_std[i+1]
+  stats2$Total_RRR_CI2[i+1] = stats$Total_RRR[i+1] + 1.96 * stats$Total_RRR_std[i+1]
+  stats2$Total_Sharpe1_CI[i+1] = stats$Total_Sharpe1[i+1] - 1.96 * stats$Total_Sharpe1_std[i+1]
+  stats2$Total_Sharpe1_CI2[i+1] = stats$Total_Sharpe1[i+1] + 1.96 * stats$Total_Sharpe1_std[i+1]
+  stats2$Total_Sharpe2_CI[i+1] = stats$Total_Sharpe2[i+1] - 1.96 * stats$Total_Sharpe2_std[i+1]
+  stats2$Total_Sharpe2_CI2[i+1] = stats$Total_Sharpe2[i+1] + 1.96 * stats$Total_Sharpe2_std[i+1]
+  stats2[i+1,27] = pnorm(1, mean = stats$arith_RRR[i+1], sd = stats$arith_RRR_std[i+1], lower.tail = TRUE)
+  stats2[i+1,28] = pnorm(1, mean = stats$Geom_RRR[i+1], sd = stats$Geom_RRR_std[i+1], lower.tail = TRUE)}
+
+stats2$Allocation = factor(stats2$Allocation, levels = c(stats2$Allocation))
+stats$Allocation = factor(stats$Allocation, levels = c(stats$Allocation))
+
+
+```
+
+```{r}
+for(i  in c(4,6,8,10,12,14,16,18,20,22,24,26)){
+  frame = stats[,  c(1,2, i, i-1)]
+  min = min(frame[,3])
+  max = max(frame[,3])
+  vect = vector()
+  vect = append(vect, c(1,61,101))
+  for(j in 1:101){
+    if((frame[j, 3] == min) | (frame[j, 3] == max)){
+      vect = append(vect, frame[j+1, 2])}}
+  vect = unique(vect)
+  if(i==14){
+    vect = append(vect, 32)}
+  if(i==16){
+    vect = append(vect, 69)}
+  if(i==20){
+    vect = append(vect, 90)} 
+  if(i==24){
+    vect = append(vect, 78)} 
+  if(i==26){
+    vect = append(vect, 83)} 
+  if(i==22){
+    vect = append(vect, 12)}
+  vect = sort(vect)
+  signif_pts = stats[c(vect), c(1,2, i, i-1)]
+  signif_pts = signif_pts %>%
+    mutate("Rank" = rank(signif_pts[,3]))
+  signif_pts["Rank_Color"] = NA
+  vect_col = vector()
+  if(length(vect)==5){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "greenyellow")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "yellow")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "orange")}
+            else{
+              if(as.integer(signif_pts$Rank[k]) == 5){
+                vect_col = append(vect_col, "red")}}}}}}}
+  if(length(vect)==4){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "yellow")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "orange")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "red")}}}}}}
+  if(length(vect)==3){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "orange")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "red")}}}}}
+  signif_pts$Rank_Color = vect_col
+  assign(paste0("signif1_", colnames(frame)[3]), signif_pts)}
+
+
+for(i in c(3,5,7,9,11,13,15,17,19,21,23,25,27,28)){
+  if(i!=27 & i!=28){
+    frame = stats2[,  c(1,2, i, i+1)]}
+  if(i==27 | i==28){
+    frame = stats2[, c(1,2, i)]}
+  min = min(frame[,3])
+  max = max(frame[,3])
+  vect = vector()
+  vect = append(vect, c(1,61,101))
+  if(i==3){
+    vect = append(vect, 81)}
+  if(i==11){
+    vect = append(vect, 78)}
+  if(i==23){
+    vect = append(vect, 20)}
+  if(i==25){
+    vect = append(vect, 77)}
+  if(i==25){
+    vect = append(vect, 77)}
+  if(i==21){
+    vect = append(vect, 18)}
+  for(j in 1:101){
+    if((frame[j, 3] == min) | (frame[j, 3] == max)){
+      vect = append(vect, frame[j+1, 2])}}
+  vect = unique(vect)
+  vect = sort(vect)
+  if(i!=27 & i!=28){
+    signif_pts = stats2[c(vect), c(1,2, i, i+1)]}
+  if(i==27 | i==28){
+    signif_pts = stats2[c(vect), c(1,2, i)]}
+  if(i==9 | i==17 | i==21){
+    signif_pts = signif_pts %>%
+      mutate("Rank" = rank(signif_pts[,3]))}
+  if(i!=9 & i !=17 & i!=21){
+    if(length(vect)==3){
+      signif_pts = signif_pts %>%
+        mutate("Rank" = 4-rank(signif_pts[,3]))}
+    else{
+      if(length(vect)==4){
+        signif_pts = signif_pts %>%
+          mutate("Rank" = 5-rank(signif_pts[,3]))}
+      else{
+      if(length(vect)==5){
+        signif_pts = signif_pts %>%
+          mutate("Rank" = 6-rank(signif_pts[,3]))}}}}
+  signif_pts["Rank_Color"] = NA
+  vect_col = vector()
+  if(length(vect)==5){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "greenyellow")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "yellow")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "orange")}
+            else{
+              if(as.integer(signif_pts$Rank[k]) == 5){
+                vect_col = append(vect_col, "red")}}}}}}}
+  if(length(vect)==4){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "yellow")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "orange")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "red")}}}}}}
+  if(length(vect)==3){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "orange")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "red")}}}}}
+  signif_pts$Rank_Color = vect_col
+  assign(paste0("signif_", colnames(frame)[3]), signif_pts)}
+```
+
+
+```{r}
+# 30 yr arithmetic CI
+signif_pts0 = signif_arith_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = arith_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[4,], aes(x = Spread_num, y = arith_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(arith_CI, 4), ", ", 
+                                     round(arith_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.01, nudge_x = -6) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic 30 Year Average Returns: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# 30 yr arithmetic mean vs std
+signif_pts0 = signif1_arith_STD_DEV
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = arith_STD_DEV, y = arith_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = arith_STD_DEV, y = arith_Mean, 
+                                   label = paste0(
+                                     "Mean: ", round(arith_Mean, 4), "\n", 
+                                     "SD: ", round(arith_STD_DEV, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.002) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic 30 Year Average Returns: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+```
+
+
+
+
+```{r}
+# 30 yr arithmetic sharpe1 CI
+signif_pts0 = signif_arith_Sharpe1_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = arith_Sharpe1_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = arith_Sharpe1_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(arith_Sharpe1_CI, 4), ", ", 
+                                     round(arith_Sharpe1_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.03) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic 30 Year Sharpe Ratio (Inflation Adjusted): \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+
+# 30 yr arithmetic mean sharpe ratio1
+signif_pts0 = signif1_arith_Sharpe1_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = arith_Sharpe1_std, y = arith_Sharpe1)) +
+  geom_point() +
+  geom_label(data=signif_pts0[5,], aes(x = arith_Sharpe1_std, y = arith_Sharpe1,
+                                   label = paste0(
+                                     "Mean: ", round(arith_Sharpe1, 4), "\n",
+                                     "SD: ", round(arith_Sharpe1_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.03, nudge_y = 0.035) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic 30 Year Sharpe Ratio (Inflation Adjusted): \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.275),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# 30 yr arith sharpe2 CI
+signif_pts0 = signif_arith_Sharpe2_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = arith_Sharpe2_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = Spread_num, y = arith_Sharpe2_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(arith_Sharpe2_CI, 4), ", ", 
+                                     round(arith_Sharpe2_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.04) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic 30 Year Sharpe Ratio: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# 30 yr arith sharpe2
+signif_pts0 = signif1_arith_Sharpe2_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = arith_Sharpe2_std, y = arith_Sharpe2)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[5,], aes(x = arith_Sharpe2_std, y = arith_Sharpe2, 
+                                   label = paste0(
+                                     "Mean: ", round(arith_Sharpe2, 4), "\n", 
+                                     "SD: ", round(arith_Sharpe2_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.01, nudge_y = -0.02) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic 30 Year Sharpe Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.25, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+```{r}
+# 30 yr arithmetic rrr ratio CI
+signif_pts0 = signif_Prob
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = Prob)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Prob, 
+                                   label = paste0(100* round(Prob, 4), "%")),
+             color = "darkgreen", size=4, nudge_y = -0.05) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic 30 Year Average Return: \n P[Risk Reward Ratio > 1]")+
+  ylab("Probability") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# 30 yr arithmetic RRR
+signif_pts0 = signif1_arith_RRR_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = arith_RRR_std, y = arith_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = arith_RRR_std, y = arith_RRR, 
+                                   label = paste0(
+                                     "Mean: ", round(arith_RRR, 4), "\n", 
+                                     "SD: ", round(arith_RRR_std, 4))),
+             color = "darkgreen", size=4, nudge_y = 0.12, nudge_x = 0.005) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic 30 Year Average Return Risk Reward Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.25, 0.7),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+
+```{r}
+# 30 yr Geommtric mean CI
+signif_pts0 = signif_Geom_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = Geom_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[4,], aes(x = Spread_num, y = Geom_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Geom_CI, 4), ", ", 
+                                     round(Geom_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.01, nudge_x = -6) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric 30 Year Average Returns: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# 30 yr Geometric mean vs std
+signif_pts0 = signif1_Geom_STD_DEV
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Geom_STD_DEV, y = Geom_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = Geom_STD_DEV, y = Geom_Mean, 
+                                   label = paste0(
+                                     "Mean: ", round(Geom_Mean, 4), "\n", 
+                                     "SD: ", round(Geom_STD_DEV, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.002) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric 30 Year Average Returns: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+
+```{r}
+
+# 30 yr Geometric sharpe1 CI
+signif_pts0 = signif_Geom_Sharpe1_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = Geom_Sharpe1_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = Spread_num, y = Geom_Sharpe1_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Geom_Sharpe1_CI, 4), ", ", 
+                                     round(Geom_Sharpe1_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.01) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric 30 Year Sharpe Ratio (Inflation Adjusted): \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# 30 yr Geometric mean sharpe ratio1
+signif_pts0 = signif1_Geom_Sharpe1_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Geom_Sharpe1_std, y = Geom_Sharpe1)) +
+  geom_point() +
+  geom_label(data=signif_pts0[3,], aes(x = Geom_Sharpe1_std, y = Geom_Sharpe1,
+                                   label = paste0(
+                                     "Mean: ", round(Geom_Sharpe1, 4), "\n",
+                                     "SD: ", round(Geom_Sharpe1_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.0005) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric 30 Year Sharpe Ratio (Inflation Adjusted): \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# 30 yr Geometric sharpe2 CI
+signif_pts0 = signif_Geom_Sharpe2_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = Geom_Sharpe2_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = Spread_num, y = Geom_Sharpe2_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Geom_Sharpe2_CI, 4), ", ", 
+                                     round(Geom_Sharpe2_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.05) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric 30 Year Sharpe Ratio: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# 30 yr Geom sharpe2
+signif_pts0 = signif1_Geom_Sharpe2_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Geom_Sharpe2_std, y = Geom_Sharpe2)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[5,], aes(x = Geom_Sharpe2_std, y = Geom_Sharpe2, 
+                                   label = paste0(
+                                     "Mean: ", round(Geom_Sharpe2, 4), "\n", 
+                                     "SD: ", round(Geom_Sharpe2_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.01, nudge_y = -0.025) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric 30 Year Sharpe Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+
+```{r}
+
+signif_pts0 = signif_Prob2
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = Prob2)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Prob2, 
+                                   label = paste0(100* round(Prob2, 4), "%")),
+             color = "darkgreen", size=4, nudge_y = -0.05) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric 30 Year Average Return: \n P[Risk Reward Ratio > 1]")+
+  ylab("Probability") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# 30 yr Geometric RRR
+signif_pts0 = signif1_Geom_RRR_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Geom_RRR_std, y = Geom_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Geom_RRR_std, y = Geom_RRR, 
+                                   label = paste0(
+                                     "Mean: ", round(Geom_RRR, 4), "\n", 
+                                     "SD: ", round(Geom_RRR_std, 4))),
+             color = "darkgreen", size=4, nudge_y = 0.12, nudge_x = 0.01) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric 30 Year Average Return Risk Reward Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.25, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+
+```{r}
+# 30 yr total compounded returns  CI
+signif_pts0 = signif_Total_Return_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = Total_Return_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = Spread_num, y = Total_Return_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Total_Return_CI, 4), ", ", 
+                                     round(Total_Return_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -1) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Compounded 30 Year Average Returns: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# 30 yr cmpd mean vs std
+signif_pts0 = signif1_Total_Return_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Total_Return_std, y = Total_Return)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[1,], aes(x = Total_Return_std, y = Total_Return, 
+                                   label = paste0("Mean: ", round(Total_Return, 4), "\n", 
+                                     "SD: ", round(Total_Return_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 1, nudge_y = 0.5) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Annually Compounded 30 Year Average Returns: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+```
+
+
+```{r}
+# 30 yr cmpd sharpe1 CI
+signif_pts0 = signif_Total_Sharpe1_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = Total_Sharpe1_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[4,], aes(x = Spread_num, y = Total_Sharpe1_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Total_Sharpe1_CI, 4), ", ", 
+                                     round(Total_Sharpe1_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.0015) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Compounded 30 Year Sharpe Ratio (Inflation Adjusted): \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# 30 yr compounded returns sharpe ratio1
+signif_pts0 = signif1_Total_Sharpe1_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Total_Sharpe1_std, y = Total_Sharpe1)) +
+  geom_point() +
+  geom_label(data=signif_pts0[2,], aes(x = Total_Sharpe1_std, y = Total_Sharpe1,
+                                   label = paste0(
+                                     "Mean: ", round(Total_Sharpe1, 4), "\n",
+                                     "SD: ", round(Total_Sharpe1_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.0005) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Compounded 30 Year Sharpe Ratio (Inflation Adjusted): \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.5),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# 30 yr cmpd sharpe2 CI
+signif_pts0 = signif_Total_Sharpe2_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = Total_Sharpe2_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = Spread_num, y = Total_Sharpe2_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Total_Sharpe2_CI, 4), ", ", 
+                                     round(Total_Sharpe2_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.005) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Compounded 30 Year Sharpe Ratio: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# 30 yr cmpd sharpe2
+signif_pts0 = signif1_Total_Sharpe2_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Total_Sharpe2_std, y = Total_Sharpe2)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = Total_Sharpe2_std, y = Total_Sharpe2, 
+                                   label = paste0(
+                                     "Mean: ", round(Total_Sharpe2, 4), "\n", 
+                                     "SD: ", round(Total_Sharpe2_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.0003, nudge_y = -0.003) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Compounded 30 Year Sharpe Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+```
+
+
+```{r}
+# 30 yr cmpd RRR
+signif_pts0 = signif_Total_RRR_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats2, aes(x = Spread_num, y = Total_RRR_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Total_RRR_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Total_RRR_CI, 4), ", ", 
+                                     round(Total_RRR_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = 0.0005) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Compounded 30 Year Average Return Risk Reward Ratio: \n Confidence Interval")+
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.25, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# 30 yr cmpd RRR
+signif_pts0 = signif1_Total_RRR_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats, aes(x = Total_RRR_std, y = Total_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Total_RRR_std, y = Total_RRR, 
+                                   label = paste0(
+                                     "Mean: ", round(Total_RRR, 4), "\n", 
+                                     "SD: ", round(Total_RRR_std, 4))),
+             color = "darkgreen", size=4, nudge_y = 0.00005, nudge_x = 0.00001) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Compounded 30 Year Average Return Risk Reward Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.25, 0.75),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+```
+
+
+
+
+```{r}
+
+Monthly_Data <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Monthly", range = "B10:D1174")
+
+Monthly_Data1 <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Monthly", range = "B10:D1174")
+
+# IB
+IB <- read_excel("Project 2 Historical Data.xlsx",
+    range = "AO11:AR1175", col_types = c("numeric",
+        "skip", "skip", "numeric"))
+
+Monthly_Data_plus = Monthly_Data
+Monthly_Data_plus[c(2,3)] = 1 + Monthly_Data[c(2,3)] 
+
+IB["Date"] = Monthly_Data1$Date 
+IB = IB[,c(3,1:2)]
+colnames(IB) = c("Date", "t_bill", "inflation")
+IB_plus = IB
+IB_plus[,2:3] = 1 + IB_plus[,2:3]
+
+
+vect0 = vector()
+for(i in 0:100){
+  vect0 = append(vect0, paste0("Large_Cap: ", i, "%,  ", "Fixed: ", 100-i, "%"))}
+
+Monthly_Data2 = Monthly_Data
+Monthly_Data3 = Monthly_Data
+
+IB2 = IB
+IB3 = IB
+
+# 12-month returns
+for(i in 1:1153){
+  x=i
+  y=x+11
+  Monthly_Data3$`Large Cap TR`[i] = prod(Monthly_Data_plus$`Large Cap TR`[x:y])^(1/12)-1
+  Monthly_Data3$FIXED[i] = prod(Monthly_Data_plus$FIXED[x:y])^(1/12)-1
+  Monthly_Data2$`Large Cap TR`[i] = sum(Monthly_Data$`Large Cap TR`[x:y])/12
+  Monthly_Data2$FIXED[i] = sum(Monthly_Data$FIXED[x:y])/12
+  IB2$t_bill[i] = sum(IB$t_bill[x:y])/12
+  IB2$inflation[i] = sum(IB$inflation[x:y])/12
+  IB3$t_bill[i] = prod(IB_plus$t_bill[x:y])^(1/12)-1
+  IB3$inflation[i] = prod(IB_plus$inflation[x:y])^(1/12)-1}
+
+Monthly_Data2 = Monthly_Data2[1:1153,]
+Monthly_Data3 = Monthly_Data3[1:1153,]
+IB2 = IB2[1:1153,]
+IB3 = IB3[1:1153,]
+
+# 12-month allocation returns
+for(i in 0:100){
+  alpha = i/100
+  Monthly_Data[paste0("Folio", i)] = NA
+  Monthly_Data2[paste0("Folio", i)] = NA
+  Monthly_Data3[paste0("Folio", i)] = NA
+  for(j in 1:1153){
+    Monthly_Data[j, i+4] = alpha*Monthly_Data$`Large Cap TR`[j] + (1-alpha)*Monthly_Data$FIXED[j]
+    Monthly_Data2[j, i+4] = alpha*Monthly_Data2$`Large Cap TR`[j] + (1-alpha)*Monthly_Data2$FIXED[j]
+    Monthly_Data3[j, i+4] = alpha*Monthly_Data3$`Large Cap TR`[j] + (1-alpha)*Monthly_Data3$FIXED[j]}
+  for(j in 1154:1164){
+    Monthly_Data[j, i+4] = alpha*Monthly_Data$`Large Cap TR`[j] + (1-alpha)*Monthly_Data$FIXED[j]}}
+
+
+
+Sharpe_arith1 = Monthly_Data2[,c(1,4:104)]
+Sharpe_arith1[,2:102] = NA
+Sharpe_arith2 = Sharpe_arith1
+Sharpe_geom1 = Sharpe_arith1
+Sharpe_geom2 = Sharpe_arith1
+STD = Sharpe_arith1
+arith_rrr = Sharpe_arith1
+geom_rrr = Sharpe_arith1
+
+
+
+for(i in 0:100){
+  for(j in 1:1153){
+    x=j
+    y=x+11
+    std = sqrt(var(Monthly_Data[x:y, i+4]))
+    STD[j, i+2] = std
+    Sharpe_arith1[j, i+2] = (Monthly_Data2[j, i+4] - IB2$t_bill[j] + IB2$inflation[j])/std
+    Sharpe_arith2[j, i+2] = (Monthly_Data2[j, i+4] - IB2$t_bill[j])/std
+    Sharpe_geom1[j, i+2] = (Monthly_Data3[j, i+4] - IB3$t_bill[j] + IB3$inflation[j])/std
+    Sharpe_geom2[j, i+2] = (Monthly_Data3[j, i+4] - IB3$t_bill[j])/std
+    arith_rrr[j, i+2] = Monthly_Data3[j, i+4]/std
+    geom_rrr[j, i+2] = Monthly_Data2[j, i+4]/std}}
+
+
+write.csv(Sharpe_arith1, "Sharpe_arith1.csv", row.names=FALSE, quote=FALSE)
+write.csv(Sharpe_arith2, "Sharpe_arith2.csv", row.names=FALSE, quote=FALSE)
+write.csv(Sharpe_geom1, "Sharpe_geom1.csv", row.names=FALSE, quote=FALSE)
+write.csv(Sharpe_geom2, "Sharpe_geom2.csv", row.names=FALSE, quote=FALSE)
+write.csv(arith_rrr, "arith_rrr.csv", row.names=FALSE, quote=FALSE)
+write.csv(geom_rrr, "geom_rrr.csv", row.names=FALSE, quote=FALSE)
+write.csv(STD, "STD.csv", row.names=FALSE, quote=FALSE)
+
+Sharpe_arith1 = read.csv("Sharpe_arith1.csv")
+Sharpe_arith2 = read.csv("Sharpe_arith2.csv")
+Sharpe_geom1 = read.csv("Sharpe_geom1.csv")
+Sharpe_geom2 = read.csv("Sharpe_geom2.csv")
+arith_rrr = read.csv("arith_rrr.csv")
+geom_rrr = read.csv("geom_rrr.csv")
+STD = read.csv("STD.csv")
+
+
+
+stats12 = data.frame(matrix(nrow=101, ncol = 18))
+colnames(stats12) = c("Allocation", "Spread_num", "arith_Mean", "arith_STD_DEV", "arith_Sharpe1", "arith_Sharpe1_std", "arith_Sharpe2", "arith_Sharpe2_std", "arith_RRR",  "arith_RRR_std", "Geom_Mean", "Geom_STD_DEV", "Geom_Sharpe1", "Geom_Sharpe1_std", "Geom_Sharpe2", "Geom_Sharpe2_std", "Geom_RRR",  "Geom_RRR_std")
+stats12$Spread_num = c(seq(0,100,1))
+Allocation = vector()
+for(i in 0:100){
+  Allocation = append(Allocation, paste0("Large Cap = ", i, "%, Fixed = ", 100-i, "%"))}
+stats12$Allocation = c(Allocation)
+
+# stats12
+for(i in 0:100){
+  stats12$arith_Mean[i+1] = sum(Monthly_Data2[,i+4])/1153
+  stats12$arith_STD_DEV[i+1] = sqrt(var(Monthly_Data2[, i+4]))
+  stats12$arith_Sharpe1[i+1] = sum(Sharpe_arith1[,i+2])/1153
+  stats12$arith_Sharpe2[i+1] = sum(Sharpe_arith2[,i+2])/1153
+  stats12$arith_Sharpe1_std[i+1] = sqrt(var(Sharpe_arith1[,i+2]))
+  stats12$arith_Sharpe2_std[i+1] = sqrt(var(Sharpe_arith2[,i+2]))
+  stats12$arith_RRR[i+1] = sum(arith_rrr[,i+2])/1153
+  stats12$arith_RRR_std[i+1] = sqrt(var(arith_rrr[,i+2]))
+  stats12$Geom_Mean[i+1] = sum(Monthly_Data3[,i+4])/1153
+  stats12$Geom_STD_DEV[i+1] = sqrt(var(Monthly_Data3[, i+4]))
+  stats12$Geom_Sharpe1[i+1] = sum(Sharpe_geom1[,i+2])/1153
+  stats12$Geom_Sharpe2[i+1] = sum(Sharpe_geom2[,i+2])/1153
+  stats12$Geom_Sharpe1_std[i+1] = sqrt(var(Sharpe_geom1[,i+2]))
+  stats12$Geom_Sharpe2_std[i+1] = sqrt(var(Sharpe_geom2[,i+2]))
+  stats12$Geom_RRR[i+1] = sum(geom_rrr[,i+2])/1153
+  stats12$Geom_RRR_std[i+1] = sqrt(var(geom_rrr[,i+2]))}
+
+stats212 = data.frame(matrix(nrow=101, ncol = 20))
+colnames(stats212) = c("Allocation", "Spread_num", "arith_CI", "arith_CI2", "arith_Sharpe1_CI", "arith_Sharpe1_CI2", "arith_Sharpe2_CI", "arith_Sharpe2_CI2", "arith_RRR_CI", "arith_RRR_CI2", "Geom_CI", "Geom_CI2", "Geom_Sharpe1_CI", "Geom_Sharpe1_CI2", "Geom_Sharpe2_CI", "Geom_Sharpe2_CI2", "Geom_RRR_CI", "Geom_RRR_CI2", "Prob", "Prob2")
+stats212[,1:2] = stats12[, 1:2]
+
+# Stats
+for(i in 0:100){
+  stats212$arith_CI[i+1] = stats12$arith_Mean[i+1] - 1.96 * stats12$arith_STD_DEV[i+1]
+  stats212$arith_CI2[i+1] = stats12$arith_Mean[i+1] + 1.96 * stats12$arith_STD_DEV[i+1]
+  stats212$arith_Sharpe1_CI[i+1] = stats12$arith_Sharpe1[i+1] - 1.96 * stats12$arith_Sharpe1_std[i+1]
+  stats212$arith_Sharpe1_CI2[i+1] = stats12$arith_Sharpe1[i+1] + 1.96 * stats12$arith_Sharpe1_std[i+1]
+  stats212$arith_Sharpe2_CI[i+1] = stats12$arith_Sharpe2[i+1] - 1.96 * stats12$arith_Sharpe2_std[i+1]
+  stats212$arith_Sharpe2_CI2[i+1] = stats12$arith_Sharpe2[i+1] + 1.96 * stats12$arith_Sharpe2_std[i+1]
+  stats212$arith_RRR_CI[i+1] = stats12$arith_RRR[i+1] - 1.96 * stats12$arith_RRR_std[i+1]
+  stats212$arith_RRR_CI2[i+1] = stats12$arith_RRR[i+1] + 1.96 * stats12$arith_RRR_std[i+1]
+  stats212$Geom_CI[i+1] = stats12$Geom_Mean[i+1] - 1.96 * stats12$Geom_STD_DEV[i+1]
+  stats212$Geom_CI2[i+1] = stats12$Geom_Mean[i+1] + 1.96 * stats12$Geom_STD_DEV[i+1]
+  stats212$Geom_Sharpe1_CI[i+1] = stats12$Geom_Sharpe1[i+1] - 1.96 * stats12$Geom_Sharpe1_std[i+1]
+  stats212$Geom_Sharpe1_CI2[i+1] = stats12$Geom_Sharpe1[i+1] + 1.96 * stats12$Geom_Sharpe1_std[i+1]
+  stats212$Geom_Sharpe2_CI[i+1] = stats12$Geom_Sharpe2[i+1] - 1.96 * stats12$Geom_Sharpe2_std[i+1]
+  stats212$Geom_Sharpe2_CI2[i+1] = stats12$Geom_Sharpe2[i+1] + 1.96 * stats12$Geom_Sharpe2_std[i+1]
+  stats212$Geom_RRR_CI[i+1] = stats12$Geom_RRR[i+1] - 1.96 * stats12$Geom_RRR_std[i+1]
+  stats212$Geom_RRR_CI2[i+1] = stats12$Geom_RRR[i+1] + 1.96 * stats12$Geom_RRR_std[i+1]
+  stats212$Prob[i+1] = pnorm(1, mean = stats12$arith_RRR[i+1], sd = stats12$arith_RRR_std[i+1], lower.tail = TRUE)
+  stats212$Prob2[i+1] = pnorm(1, mean = stats12$Geom_RRR[i+1], sd = stats12$Geom_RRR_std[i+1], lower.tail = TRUE)}
+
+stats212$Allocation = factor(stats212$Allocation, levels = c(stats212$Allocation))
+stats12$Allocation = factor(stats12$Allocation, levels = c(stats12$Allocation))
+```
+
+
+```{r}
+
+for(i  in c(4,6,8,10,12,14,16,18)){
+  frame = stats12[,  c(1,2, i, i-1)]
+  min = min(frame[,3])
+  max = max(frame[,3])
+  vect = vector()
+  vect = append(vect, c(1,61,101))
+  for(j in 1:101){
+    if((frame[j, 3] == min) | (frame[j, 3] == max)){
+      vect = append(vect, frame[j+1, 2])}}
+  vect = unique(vect)
+  if(i==6){
+    vect = append(vect, 32)}
+  if(i==8){
+    vect = append(vect, 37)}
+  if(i==12){
+    vect = append(vect, 10)}
+  if(i==14){
+    vect = append(vect, 32)}
+  if(i==16){
+    vect = append(vect, 35)}
+  vect = sort(vect)
+  signif_pts = stats12[c(vect), c(1,2, i, i-1)]
+  signif_pts = signif_pts %>%
+    mutate("Rank" = rank(signif_pts[,3]))
+  signif_pts["Rank_Color"] = NA
+  vect_col = vector()
+  if(length(vect)==6){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "lightblue")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "yellow")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "orange")}
+            else{
+              if(as.integer(signif_pts$Rank[k]) == 5){
+                vect_col = append(vect_col, "red")}
+              else{
+                if(as.integer(signif_pts$Rank[k]) == 6){
+                  vect_col = append(vect_col, "red4")}}}}}}}}
+  if(length(vect)==5){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "lightblue")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "yellow")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "orange")}
+            else{
+              if(as.integer(signif_pts$Rank[k]) == 5){
+                vect_col = append(vect_col, "red")}}}}}}}
+  if(length(vect)==4){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "yellow")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "orange")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "red")}}}}}}
+  if(length(vect)==3){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "orange")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "red")}}}}}
+  signif_pts$Rank_Color = vect_col
+  assign(paste0("signif1_", colnames(frame)[3]), signif_pts)}
+
+
+for(i in c(3,5,7,9,11,13,15,17,19,20)){
+  if(i!=19 & i!=20){
+    frame = stats212[,  c(1,2, i, i+1)]}
+  if(i==19 | i==20){
+    frame = stats212[, c(1,2, i)]}
+  min = min(frame[,3])
+  max = max(frame[,3])
+  vect = vector()
+  vect = append(vect, c(1,61,101))
+  if(i==7){
+    vect = append(vect, 39)}
+  if(i==9){
+    vect = append(vect, 34)}
+  if(i==19){
+    vect = append(vect, 34)}
+  if(i==11){
+    vect = append(vect, 6)}
+  if(i==15){
+    vect = append(vect, 37)}
+  if(i==17){
+    vect = append(vect, 34)}
+  for(j in 1:101){
+    if((frame[j, 3] == min) | (frame[j, 3] == max)){
+      vect = append(vect, frame[j+1, 2])}}
+  vect = unique(vect)
+  vect = sort(vect)
+  if(i!=19 & i!=20){
+    signif_pts = stats212[c(vect), c(1,2, i, i+1)]}
+  if(i==19 | i==20){
+    signif_pts = stats212[c(vect), c(1,2, i)]}
+  if(i==9 | i==17){
+    signif_pts = signif_pts %>%
+      mutate("Rank" = rank(signif_pts[,3]))}
+  if(i!=9 & i !=17){
+    if(length(vect)==3){
+      signif_pts = signif_pts %>%
+        mutate("Rank" = 4-rank(signif_pts[,3]))}
+    else{
+      if(length(vect)==4){
+        signif_pts = signif_pts %>%
+          mutate("Rank" = 5-rank(signif_pts[,3]))}
+      else{
+      if(length(vect)==5){
+        signif_pts = signif_pts %>%
+          mutate("Rank" = 6-rank(signif_pts[,3]))}}}}
+  signif_pts["Rank_Color"] = NA
+  vect_col = vector()
+  if(length(vect)==6){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "lightblue")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "yellow")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "orange")}
+            else{
+              if(as.integer(signif_pts$Rank[k]) == 5){
+                vect_col = append(vect_col, "red")}
+              else{
+                if(as.integer(signif_pts$Rank[k]) == 6){
+                  vect_col = append(vect_col, "red4")}}}}}}}}
+  if(length(vect)==5){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "lightblue")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "yellow")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "orange")}
+            else{
+              if(as.integer(signif_pts$Rank[k]) == 5){
+                vect_col = append(vect_col, "red")}}}}}}}
+  if(length(vect)==4){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "yellow")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "orange")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "red")}}}}}}
+  if(length(vect)==3){
+    for(k in 1:length(vect)){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "orange")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "red")}}}}}
+  signif_pts$Rank_Color = vect_col
+  assign(paste0("signif_", colnames(frame)[3]), signif_pts)}
+```
+
+
+- rrr means must have high win rate to make a profit
+- sharpe means rfr greater than returns or more likely to have negative returns
+
+
+```{r}
+# Monthly arithmetic CI
+signif_pts0 = signif_arith_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats212, aes(x = Spread_num, y = arith_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = arith_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(arith_CI, 4), ", ", 
+                                     round(arith_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.002) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Average Returns: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.25, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# Monthly arithmetic mean vs std
+signif_pts0 = signif1_arith_STD_DEV
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = arith_STD_DEV, y = arith_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = arith_STD_DEV, y = arith_Mean, 
+                                   label = paste0(
+                                     "Mean: ", round(arith_Mean, 4), "\n", 
+                                     "SD: ", round(arith_STD_DEV, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.002) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Average Returns: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+```
+
+
+
+
+```{r}
+# Monthly arithmetic sharpe1 CI
+signif_pts0 = signif_arith_Sharpe1_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats212, aes(x = Spread_num, y = arith_Sharpe1_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = arith_Sharpe1_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(arith_Sharpe1_CI, 4), ", ", 
+                                     round(arith_Sharpe1_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.07) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Sharpe Ratio (Inflation Adjusted): \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+
+# Monthly arithmetic mean sharpe ratio1
+signif_pts0 = signif1_arith_Sharpe1_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = arith_Sharpe1_std, y = arith_Sharpe1)) +
+  geom_point() +
+  geom_label(data=signif_pts0[3,], aes(x = arith_Sharpe1_std, y = arith_Sharpe1,
+                                   label = paste0(
+                                     "Mean: ", round(arith_Sharpe1, 4), "\n",
+                                     "SD: ", round(arith_Sharpe1_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.07, nudge_y = 0.035) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Sharpe Ratio (Inflation Adjusted): \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.275),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly arith sharpe2 CI
+signif_pts0 = signif_arith_Sharpe2_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats212, aes(x = Spread_num, y = arith_Sharpe2_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = Spread_num, y = arith_Sharpe2_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(arith_Sharpe2_CI, 4), ", ", 
+                                     round(arith_Sharpe2_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.04) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Sharpe Ratio: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly arith sharpe2
+signif_pts0 = signif1_arith_Sharpe2_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = arith_Sharpe2_std, y = arith_Sharpe2)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = arith_Sharpe2_std, y = arith_Sharpe2, 
+                                   label = paste0(
+                                     "Mean: ", round(arith_Sharpe2, 4), "\n", 
+                                     "SD: ", round(arith_Sharpe2_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.01, nudge_y = -0.002) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Sharpe Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.5, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+```{r}
+vect_a1 = vector()
+vect_a2 = vector()
+vect_g1 = vector()
+vect_g2 = vector()
+
+for(i in 0:100){
+  win1 = pnorm(0, mean = sum(Sharpe_arith1[, i+2])/1153, sd = sqrt(var(Sharpe_arith1[,i+2])), lower.tail = FALSE)
+  win2 = pnorm(0, mean = sum(Sharpe_arith2[, i+2])/1153, sd = sqrt(var(Sharpe_arith2[,i+2])), lower.tail = FALSE)
+  win3 = pnorm(0, mean = sum(Sharpe_geom1[, i+2])/1153, sd = sqrt(var(Sharpe_geom1[,i+2])), lower.tail = FALSE)
+  win4 = pnorm(0, mean = sum(Sharpe_geom2[, i+2])/1153, sd = sqrt(var(Sharpe_geom2[,i+2])), lower.tail = FALSE)
+  vect_a1 = append(vect_a1, win1)
+  vect_a2 = append(vect_a2, win2)
+  vect_g1 = append(vect_g1, win3)
+  vect_g2 = append(vect_g2, win4)
+    
+}
+P_Sharpe = data.frame(matrix(ncol=6, nrow=101))
+colnames(P_Sharpe) = c("Allocation", "Num", "Arith1", "Arith2", "Geom1", "Geom2")
+P_Sharpe[,1:2] = stats12[,1:2]
+P_Sharpe$Arith1 = vect_a1
+P_Sharpe$Arith2 = vect_a2
+P_Sharpe$Geom1 = vect_g1
+P_Sharpe$Geom2 = vect_g2
+
+
+
+P_Win_Loss = P_Sharpe[,1:6]
+P_Win_Loss[,3:8] = NA
+colnames(P_Win_Loss) = c("Allocation", "Num", "Arith", "Arith_tbill_inflation", "Arith_tbill", "Geom", "Geom_tbill_inflation", "Geom_tbill")
+
+for(i in 0:100){
+  plus = subset(Monthly_Data2, Monthly_Data2[, i+4] > 0)[, i+4]
+  minus = subset(Monthly_Data2, Monthly_Data2[, i+4] < 0)[, i+4]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Arith[i+1] = -w/l}
+
+for(i in 0:100){
+  plus = subset(Monthly_Data3, Monthly_Data3[, i+4] > 0)[, i+4]
+  minus = subset(Monthly_Data3, Monthly_Data3[, i+4] < 0)[, i+4]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Geom[i+1] = -w/l}
+
+
+Sharpe_a1 = Sharpe_arith1
+Sharpe_a2 = Sharpe_arith2
+Sharpe_g1 = Sharpe_geom1
+Sharpe_g2 = Sharpe_geom2
+for(i in 0:100){
+  for(j in 1:1153){
+    Sharpe_a1[j, i+2] = Sharpe_arith1[j, i+2] * STD[j, i+2]
+    Sharpe_a2[j, i+2] = Sharpe_arith2[j, i+2] * STD[j, i+2]
+    Sharpe_g1[j, i+2] = Sharpe_geom1[j, i+2] * STD[j, i+2]
+    Sharpe_g2[j, i+2] = Sharpe_geom2[j, i+2] * STD[j, i+2]}}
+
+
+for(i in 0:100){
+  plus = subset(Sharpe_a1, Sharpe_a1[, i+2] > 0)[, i+2]
+  minus = subset(Sharpe_a1, Sharpe_a1[, i+2] < 0)[, i+2]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Arith_tbill_inflation[i+1] = -w/l}
+
+for(i in 0:100){
+  plus = subset(Sharpe_a2, Sharpe_a2[, i+2] > 0)[, i+2]
+  minus = subset(Sharpe_a2, Sharpe_a2[, i+2] < 0)[, i+2]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Arith_tbill[i+1] = -w/l}
+
+for(i in 0:100){
+  plus = subset(Sharpe_g1, Sharpe_g1[, i+2] > 0)[, i+2]
+  minus = subset(Sharpe_g1, Sharpe_g1[, i+2] < 0)[, i+2]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Geom_tbill_inflation[i+1] = -w/l}
+
+for(i in 0:100){
+  plus = subset(Sharpe_g2, Sharpe_g2[, i+2] > 0)[, i+2]
+  minus = subset(Sharpe_g2, Sharpe_g2[, i+2] < 0)[, i+2]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Geom_tbill[i+1] = -w/l}
+
+a1 = P_Win_Loss[,c(1,2,3)]
+a1["Type"] = colnames(a1)[3]
+colnames(a1)[3] = "win_loss"
+
+a2 = P_Win_Loss[,c(1,2,4)]
+a2["Type"] = colnames(a2)[3]
+colnames(a2)[3] = "win_loss"
+
+g1 = P_Win_Loss[,c(1,2,5)]
+g1["Type"] = colnames(g1)[3]
+colnames(g1)[3] = "win_loss"
+
+g2 = P_Win_Loss[,c(1,2,6)]
+g2["Type"] = colnames(g2)[3]
+colnames(g2)[3] = "win_loss"
+
+a3 = P_Win_Loss[,c(1,2,7)]
+a3["Type"] = colnames(a3)[3]
+colnames(a3)[3] = "win_loss"
+
+g3 = P_Win_Loss[,c(1,2,8)]
+g3["Type"] = colnames(g3)[3]
+colnames(g3)[3] = "win_loss"
+
+signif_pts0 = rbind(subset(a1, a1$win_loss == max(a1$win_loss)),
+      subset(a2, a2$win_loss == max(a2$win_loss)), 
+      subset(a3, a3$win_loss == max(a3$win_loss)), 
+      subset(g1, g1$win_loss == max(g1$win_loss)), 
+      subset(g2, g2$win_loss == max(g2$win_loss)), 
+      subset(g3, g3$win_loss == max(g3$win_loss)))
+
+
+win_loss = rbind(a3, a1, a2, g3, g1, g2)
+
+
+# Monthly arith sharpe2 CI
+# signif_pts0 = signif_arith_Sharpe2_CI
+# col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = win_loss, aes(x = Num, y = win_loss, facet = factor(Type))) + 
+  facet_wrap(~Type) +
+  geom_point() + 
+  geom_point(data = signif_pts0, aes(x = Num, y = win_loss, facet = factor(Type)), color = "green3", size=5) +
+  # scale_color_manual(values = col_pal)+
+  labs(title = "Average Win Loss Ratio") +
+  ylab("Average Win/Loss Ratio") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# geom_label(data=signif_pts0[3,], aes(x = Spread_num, y = arith_Sharpe2_CI, 
+  #                                  label = paste0(
+  #                                    "95% CI:", "\n", "[", round(arith_Sharpe2_CI, 4), ", ", 
+  #                                    round(arith_Sharpe2_CI2, 4),"]")),
+  #            color = "darkgreen", size=4, nudge_y = -0.04) + 
+
+
+
+```
+
+```{r}
+# Monthly arithmetic rrr ratio CI
+signif_pts0 = signif_Prob
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats212, aes(x = Spread_num, y = Prob)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Prob, 
+                                   label = paste0(100* round(Prob, 4), "%")),
+             color = "darkgreen", size=4, nudge_y = -0.05) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Average Return: \n P[Risk Reward Ratio > 1]")+
+  ylab("Probability") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly arithmetic RRR
+signif_pts0 = signif1_arith_RRR_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = arith_RRR_std, y = arith_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = arith_RRR_std, y = arith_RRR, 
+                                   label = paste0(
+                                     "Mean: ", round(arith_RRR, 4), "\n", 
+                                     "SD: ", round(arith_RRR_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.02) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Average Return Risk Reward Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+
+```{r}
+# Monthly Geommtric mean CI
+signif_pts0 = signif_Geom_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats212, aes(x = Spread_num, y = Geom_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Geom_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Geom_CI, 4), ", ", 
+                                     round(Geom_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.01, nudge_x = -6) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Average Returns: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.25, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly Geometric mean vs std
+signif_pts0 = signif1_Geom_STD_DEV
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = Geom_STD_DEV, y = Geom_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Geom_STD_DEV, y = Geom_Mean, 
+                                   label = paste0(
+                                     "Mean: ", round(Geom_Mean, 4), "\n", 
+                                     "SD: ", round(Geom_STD_DEV, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.002) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Average Returns: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+
+```{r}
+
+# Monthly Geometric sharpe1 CI
+signif_pts0 = signif_Geom_Sharpe1_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats212, aes(x = Spread_num, y = Geom_Sharpe1_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Geom_Sharpe1_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Geom_Sharpe1_CI, 4), ", ", 
+                                     round(Geom_Sharpe1_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.01) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Sharpe Ratio (Inflation Adjusted): \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly Geometric mean sharpe ratio1
+signif_pts0 = signif1_Geom_Sharpe1_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = Geom_Sharpe1_std, y = Geom_Sharpe1)) +
+  geom_point() +
+  geom_label(data=signif_pts0[3,], aes(x = Geom_Sharpe1_std, y = Geom_Sharpe1,
+                                   label = paste0(
+                                     "Mean: ", round(Geom_Sharpe1, 4), "\n",
+                                     "SD: ", round(Geom_Sharpe1_std, 4))),
+             color = "darkgreen", size=4, nudge_y = 0.025, nudge_x=0.1) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Sharpe Ratio (Inflation Adjusted): \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# Monthly Geometric sharpe2 CI
+signif_pts0 = signif_Geom_Sharpe2_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats212, aes(x = Spread_num, y = Geom_Sharpe2_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Geom_Sharpe2_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Geom_Sharpe2_CI, 4), ", ", 
+                                     round(Geom_Sharpe2_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.025) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Sharpe Ratio: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly Geom sharpe2
+signif_pts0 = signif1_Geom_Sharpe2_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = Geom_Sharpe2_std, y = Geom_Sharpe2)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[4,], aes(x = Geom_Sharpe2_std, y = Geom_Sharpe2, 
+                                   label = paste0(
+                                     "Mean: ", round(Geom_Sharpe2, 4), "\n", 
+                                     "SD: ", round(Geom_Sharpe2_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.01, nudge_y = -0.025) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Sharpe Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+## TOTALS
+```{r}
+
+signif_pts0 = signif_Prob2
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats212, aes(x = Spread_num, y = Prob2)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Prob2, 
+                                   label = paste0(100* round(Prob2, 4), "%")),
+             color = "darkgreen", size=4, nudge_y = -0.05) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Average Return: \n P[Risk Reward Ratio > 1]")+
+  ylab("Probability") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly Geometric RRR
+signif_pts0 = signif1_Geom_RRR_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = Geom_RRR_std, y = Geom_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = Geom_RRR_std, y = Geom_RRR, 
+                                   label = paste0(
+                                     "Mean: ", round(Geom_RRR, 4), "\n", 
+                                     "SD: ", round(Geom_RRR_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.025) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Average Return Risk Reward Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+```{r}
+
+signif1_arith_Sharpe1_1 = signif1_arith_Sharpe1[,c(1,2,3,5,6)]
+signif1_arith_Sharpe1_1["Type"] = colnames(signif1_arith_Sharpe1_1)[3]
+colnames(signif1_arith_Sharpe1_1)[3] = "value"
+
+
+signif1_arith_Sharpe2_1 = signif1_arith_Sharpe2[,c(1,2,3,5,6)]
+signif1_arith_Sharpe2_1["Type"] = colnames(signif1_arith_Sharpe2_1)[3]
+colnames(signif1_arith_Sharpe2_1)[3] = "value"
+
+signif1_Geom_Sharpe1_1 = signif1_Geom_Sharpe1[,c(1,2,3,5,6)]
+signif1_Geom_Sharpe1_1["Type"] = colnames(signif1_Geom_Sharpe1_1)[3]
+colnames(signif1_Geom_Sharpe1_1)[3] = "value"
+
+signif1_Geom_Sharpe2_1 = signif1_Geom_Sharpe2[,c(1,2,3,5,6)]
+signif1_Geom_Sharpe2_1["Type"] = colnames(signif1_Geom_Sharpe2_1)[3]
+colnames(signif1_Geom_Sharpe2_1)[3] = "value"
+
+
+a1 = stats_total[,c(1,2,5)]
+a1["Type"] = colnames(a1)[3]
+colnames(a1)[3] = "value"
+
+a2 = stats_total[,c(1,2,6)]
+a2["Type"] = colnames(a2)[3]
+colnames(a2)[3] = "value"
+
+g1 = stats_total[,c(1,2,10)]
+g1["Type"] = colnames(g1)[3]
+colnames(g1)[3] = "value"
+
+g2 = stats_total[,c(1,2,11)]
+g2["Type"] = colnames(g2)[3]
+colnames(g2)[3] = "value"
+
+
+
+
+# Monthly arith sharpe2 CI
+# signif_pts0 = signif_arith_Sharpe2_CI
+# col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = sharpe, aes(x = Spread_num, y = value, facet = factor(Type))) + 
+  facet_wrap(~Type) +
+  geom_point() + 
+  geom_point(data = signif_pts0, aes(x = Num, y = win_loss, facet = factor(Type)), color = "green3", size=5) +
+  # scale_color_manual(values = col_pal)+
+  labs(title = "Average Win Loss Ratio") +
+  ylab("Average Win/Loss Ratio") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+signif_pts0 = rbind(signif1_arith_Sharpe1_1, signif1_arith_Sharpe2_1, signif1_Geom_Sharpe1_1, signif1_Geom_Sharpe2_1)
+signif_pts1 = signif_pts0[c(1,5,9,13,2,10,14,6,3,7,11,15,4,8,12,16),]
+
+
+
+for(i in )
+col_pal <- c(signif_pts1$Rank_Color)
+ggplot(data = sharpe, aes(x = Spread_num, y = value, facet = factor(Type))) + 
+  facet_wrap(~Type, scales = "free") +
+  geom_point() + 
+  geom_label(data=signif_pts1, aes(x = Spread_num, y = value, 
+                                   label = paste0(
+                                     "Sharpe Ratio: ", round(value, 4))),
+             color = "darkgreen", size=4, nudge_y = -0.035, nudge_x = 0.004) +
+  geom_point(data = signif_pts1, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Sharpe Ratio") +
+  ylab("Sharpe Ratio") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+```
+
+```{r}
+vect_a1 = vector()
+vect_a2 = vector()
+vect_g1 = vector()
+vect_g2 = vector()
+
+for(i in 0:100){
+  win1 = pnorm(0, mean = sum(Sharpe_arith1[, i+2])/1153, sd = sqrt(var(Sharpe_arith1[,i+2])), lower.tail = FALSE)
+  win2 = pnorm(0, mean = sum(Sharpe_arith2[, i+2])/1153, sd = sqrt(var(Sharpe_arith2[,i+2])), lower.tail = FALSE)
+  win3 = pnorm(0, mean = sum(Sharpe_geom1[, i+2])/1153, sd = sqrt(var(Sharpe_geom1[,i+2])), lower.tail = FALSE)
+  win4 = pnorm(0, mean = sum(Sharpe_geom2[, i+2])/1153, sd = sqrt(var(Sharpe_geom2[,i+2])), lower.tail = FALSE)
+  vect_a1 = append(vect_a1, win1)
+  vect_a2 = append(vect_a2, win2)
+  vect_g1 = append(vect_g1, win3)
+  vect_g2 = append(vect_g2, win4)
+    
+}
+P_Sharpe = data.frame(matrix(ncol=6, nrow=101))
+colnames(P_Sharpe) = c("Allocation", "Num", "Arith1", "Arith2", "Geom1", "Geom2")
+P_Sharpe[,1:2] = stats12[,1:2]
+P_Sharpe$Arith1 = vect_a1
+P_Sharpe$Arith2 = vect_a2
+P_Sharpe$Geom1 = vect_g1
+P_Sharpe$Geom2 = vect_g2
+
+
+
+P_Win_Loss = P_Sharpe[,1:6]
+P_Win_Loss[,3:8] = NA
+colnames(P_Win_Loss) = c("Allocation", "Num", "Arith", "Arith_tbill_inflation", "Arith_tbill", "Geom", "Geom_tbill_inflation", "Geom_tbill")
+
+for(i in 0:100){
+  plus = subset(Monthly_Data2, Monthly_Data2[, i+4] > 0)[, i+4]
+  minus = subset(Monthly_Data2, Monthly_Data2[, i+4] < 0)[, i+4]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Arith[i+1] = -w/l}
+
+for(i in 0:100){
+  plus = subset(Monthly_Data3, Monthly_Data3[, i+4] > 0)[, i+4]
+  minus = subset(Monthly_Data3, Monthly_Data3[, i+4] < 0)[, i+4]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Geom[i+1] = -w/l}
+
+
+Sharpe_a1 = Sharpe_arith1
+Sharpe_a2 = Sharpe_arith2
+Sharpe_g1 = Sharpe_geom1
+Sharpe_g2 = Sharpe_geom2
+for(i in 0:100){
+  for(j in 1:1153){
+    Sharpe_a1[j, i+2] = Sharpe_arith1[j, i+2] * STD[j, i+2]
+    Sharpe_a2[j, i+2] = Sharpe_arith2[j, i+2] * STD[j, i+2]
+    Sharpe_g1[j, i+2] = Sharpe_geom1[j, i+2] * STD[j, i+2]
+    Sharpe_g2[j, i+2] = Sharpe_geom2[j, i+2] * STD[j, i+2]}}
+
+
+for(i in 0:100){
+  plus = subset(Sharpe_a1, Sharpe_a1[, i+2] > 0)[, i+2]
+  minus = subset(Sharpe_a1, Sharpe_a1[, i+2] < 0)[, i+2]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Arith_tbill_inflation[i+1] = -w/l}
+
+for(i in 0:100){
+  plus = subset(Sharpe_a2, Sharpe_a2[, i+2] > 0)[, i+2]
+  minus = subset(Sharpe_a2, Sharpe_a2[, i+2] < 0)[, i+2]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Arith_tbill[i+1] = -w/l}
+
+for(i in 0:100){
+  plus = subset(Sharpe_g1, Sharpe_g1[, i+2] > 0)[, i+2]
+  minus = subset(Sharpe_g1, Sharpe_g1[, i+2] < 0)[, i+2]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Geom_tbill_inflation[i+1] = -w/l}
+
+for(i in 0:100){
+  plus = subset(Sharpe_g2, Sharpe_g2[, i+2] > 0)[, i+2]
+  minus = subset(Sharpe_g2, Sharpe_g2[, i+2] < 0)[, i+2]
+  w = sum(plus[,1])/length(plus[,1])
+  l = sum(minus[,1])/length(minus[,1])
+  P_Win_Loss$Geom_tbill[i+1] = -w/l}
+
+a1 = P_Win_Loss[,c(1,2,3)]
+a1["Type"] = colnames(a1)[3]
+colnames(a1)[3] = "win_loss"
+
+a2 = P_Win_Loss[,c(1,2,4)]
+a2["Type"] = colnames(a2)[3]
+colnames(a2)[3] = "win_loss"
+
+g1 = P_Win_Loss[,c(1,2,5)]
+g1["Type"] = colnames(g1)[3]
+colnames(g1)[3] = "win_loss"
+
+g2 = P_Win_Loss[,c(1,2,6)]
+g2["Type"] = colnames(g2)[3]
+colnames(g2)[3] = "win_loss"
+
+a3 = P_Win_Loss[,c(1,2,7)]
+a3["Type"] = colnames(a3)[3]
+colnames(a3)[3] = "win_loss"
+
+g3 = P_Win_Loss[,c(1,2,8)]
+g3["Type"] = colnames(g3)[3]
+colnames(g3)[3] = "win_loss"
+
+signif_pts0 = rbind(subset(a1, a1$win_loss == max(a1$win_loss)),
+      subset(a2, a2$win_loss == max(a2$win_loss)), 
+      subset(a3, a3$win_loss == max(a3$win_loss)), 
+      subset(g1, g1$win_loss == max(g1$win_loss)), 
+      subset(g2, g2$win_loss == max(g2$win_loss)), 
+      subset(g3, g3$win_loss == max(g3$win_loss)))
+
+
+win_loss = rbind(a3, a1, a2, g3, g1, g2)
+
+
+# Monthly arith sharpe2 CI
+# signif_pts0 = signif_arith_Sharpe2_CI
+# col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = win_loss, aes(x = Num, y = win_loss, facet = factor(Type))) + 
+  facet_wrap(~Type) +
+  geom_point() + 
+  geom_point(data = signif_pts0, aes(x = Num, y = win_loss, facet = factor(Type)), color = "green3", size=5) +
+  # scale_color_manual(values = col_pal)+
+  labs(title = "Average Win Loss Ratio") +
+  ylab("Average Win/Loss Ratio") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# geom_label(data=signif_pts0[3,], aes(x = Spread_num, y = arith_Sharpe2_CI, 
+  #                                  label = paste0(
+  #                                    "95% CI:", "\n", "[", round(arith_Sharpe2_CI, 4), ", ", 
+  #                                    round(arith_Sharpe2_CI2, 4),"]")),
+  #            color = "darkgreen", size=4, nudge_y = -0.04) + 
+
+
+
+```
+
+```{r}
+# Monthly arithmetic rrr ratio CI
+signif_pts0 = signif_Prob
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats_total_CI, aes(x = Spread_num, y = Prob)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Prob, 
+                                   label = paste0(100* round(Prob, 4), "%")),
+             color = "darkgreen", size=4, nudge_y = -0.05) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Average Return: \n P[Risk Reward Ratio > 1]")+
+  ylab("Probability") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly arithmetic RRR
+signif_pts0 = signif1_arith_RRR_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = arith_RRR_std, y = arith_RRR)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[3,], aes(x = arith_RRR_std, y = arith_RRR, 
+                                   label = paste0(
+                                     "Mean: ", round(arith_RRR, 4), "\n", 
+                                     "SD: ", round(arith_RRR_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.02) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Average Return Risk Reward Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+
+```{r}
+# Monthly Geommtric mean CI
+signif_pts0 = signif_Geom_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats_total_CI, aes(x = Spread_num, y = Geom_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Geom_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Geom_CI, 4), ", ", 
+                                     round(Geom_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.01, nudge_x = -6) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Average Returns: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.25, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly Geometric mean vs std
+signif_pts0 = signif1_Geom_STD_DEV
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = Geom_STD_DEV, y = Geom_Mean)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Geom_STD_DEV, y = Geom_Mean, 
+                                   label = paste0(
+                                     "Mean: ", round(Geom_Mean, 4), "\n", 
+                                     "SD: ", round(Geom_STD_DEV, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.002) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Average Returns: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
+
+
+```{r}
+
+# Monthly Geometric sharpe1 CI
+signif_pts0 = signif_Geom_Sharpe1_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats_total_CI, aes(x = Spread_num, y = Geom_Sharpe1_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Geom_Sharpe1_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Geom_Sharpe1_CI, 4), ", ", 
+                                     round(Geom_Sharpe1_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.01) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Sharpe Ratio (Inflation Adjusted): \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly Geometric mean sharpe ratio1
+signif_pts0 = signif1_Geom_Sharpe1_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = Geom_Sharpe1_std, y = Geom_Sharpe1)) +
+  geom_point() +
+  geom_label(data=signif_pts0[3,], aes(x = Geom_Sharpe1_std, y = Geom_Sharpe1,
+                                   label = paste0(
+                                     "Mean: ", round(Geom_Sharpe1, 4), "\n",
+                                     "SD: ", round(Geom_Sharpe1_std, 4))),
+             color = "darkgreen", size=4, nudge_y = 0.025, nudge_x=0.1) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Sharpe Ratio (Inflation Adjusted): \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.3),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+# Monthly Geometric sharpe2 CI
+signif_pts0 = signif_Geom_Sharpe2_CI
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats_total_CI, aes(x = Spread_num, y = Geom_Sharpe2_CI)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = Spread_num, y = Geom_Sharpe2_CI, 
+                                   label = paste0(
+                                     "95% CI:", "\n", "[", round(Geom_Sharpe2_CI, 4), ", ", 
+                                     round(Geom_Sharpe2_CI2, 4),"]")),
+             color = "darkgreen", size=4, nudge_y = -0.025) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Sharpe Ratio: \n Confidence Interval") +
+  ylab("Lower Bound") +
+  xlab("Allocation (Large Cap)") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+
+# Monthly Geom sharpe2
+signif_pts0 = signif1_Geom_Sharpe2_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = stats12, aes(x = Geom_Sharpe2_std, y = Geom_Sharpe2)) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[4,], aes(x = Geom_Sharpe2_std, y = Geom_Sharpe2, 
+                                   label = paste0(
+                                     "Mean: ", round(Geom_Sharpe2, 4), "\n", 
+                                     "SD: ", round(Geom_Sharpe2_std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.01, nudge_y = -0.025) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Geometric Monthly Sharpe Ratio: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.45, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+```
