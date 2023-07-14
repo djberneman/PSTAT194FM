@@ -57,6 +57,7 @@ for(i in 2:3){
 Yearly_Data = Yearly_Data[1:1153,]
 Yearly_IB = Yearly_IB[1:1153,]
 
+prod(Monthly_Data$Large_Cap[2:11])^(1/10)
 
 # 10 year period
 Yearly_Data10 = Monthly_Data
@@ -69,6 +70,8 @@ for(i in 2:3){
     Yearly_IB10[j,i] = prod(IB_plus[x:y, i]) - 1}}
 Yearly_Data10 = Yearly_Data10[1:1045,]
 Yearly_IB10 = Yearly_IB10[1:1045,]
+
+
 
 
 # 20 year period
@@ -122,30 +125,498 @@ IB = IB %>%
   mutate("risk_free" = (1 + IB$t_bill) / (1 + IB$inflation) - 1)
 IB_plus = IB
 IB_plus[,2:4] = 1 + IB_plus[,2:4]
+m_sharpe1 = Monthly_Data[,c(1,4:104)]
+m_sharpe1[,2:102] = NA
+m_sharpe2 = m_sharpe1
+m_sharpe3 = m_sharpe1
+
+for(i in 0:100){
+  for(j in 1:1164){
+    m_sharpe1[j,i+2] = Monthly_Data[j,i+4] - IB$risk_free[j]
+    m_sharpe2[j,i+2] = Monthly_Data[j,i+4] - IB$t_bill[j] - IB$inflation[j]
+    m_sharpe3[j,i+2] = Monthly_Data[j,i+4] - IB$t_bill[j]}}
+
+m_sharpe1g = m_sharpe1
+m_sharpe1g[,2:102] = 1 + m_sharpe1g[,2:102]
+m_sharpe2g = m_sharpe2
+m_sharpe2g[,2:102] = 1 + m_sharpe2g[,2:102]
+m_sharpe3g = m_sharpe3
+m_sharpe3g[,2:102] = 1 + m_sharpe3g[,2:102]
 
 
 
 # monthly averages, sharpes, and rrr
-std_monthly = data.frame(matrix(ncol=3, nrow = 101))
-colnames(std_monthly) = c("Allocation", "Num", "Value")
-std_monthly$Allocation = vect0
-std_monthly$Num = c(seq(0,100,1))
-arith_monthly = std_monthly
-geom_monthly = std_monthly
-arith_rrr_monthly = std_monthly
-geom_rrr_monthly = std_monthly
+arith_monthly = data.frame(matrix(ncol=12, nrow = 101))
+colnames(arith_monthly) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
+arith_monthly$Allocation = vect0
+arith_monthly$type = "Monthly"
+arith_monthly$Num = c(seq(0,100,1))
+geom_monthly = arith_monthly
 
-arith_sharpe1_monthly = Monthly_Data
-arith_sharpe1_monthly[,4:104] = NA 
-arith_sharpe2_monthly = arith_sharpe1_monthly
-arith_sharpe3_monthly = arith_sharpe1_monthly
-geom_sharpe1_monthly = arith_sharpe1_monthly
-geom_sharpe2_monthly = arith_sharpe1_monthly
-geom_sharpe3_monthly = arith_sharpe1_monthly
+for(i in 0:100){
+  arith_monthly$mean[i+1] = sum(Monthly_Data[,i+4])/1164
+  arith_monthly$std[i+1] = sqrt(var(Monthly_Data[,i+4]))
+  arith_monthly$rrr[i+1] = (sum(Monthly_Data[,i+4])/1164)/sqrt(var(Monthly_Data[,i+4]))
+  arith_monthly$sharpe1[i+1] = (sum(m_sharpe1[,i+2])/1164)/arith_monthly$std[i+1]
+  arith_monthly$sharpe2[i+1] = (sum(m_sharpe2[,i+2])/1164)/arith_monthly$std[i+1]
+  arith_monthly$sharpe3[i+1] = (sum(m_sharpe3[,i+2])/1164)/arith_monthly$std[i+1]
+  arith_monthly$sharpe4[i+1] = (sum(m_sharpe1[,i+2])/1164)/sqrt(var(m_sharpe1[,i+2]))
+  arith_monthly$sharpe5[i+1] = (sum(m_sharpe2[,i+2])/1164)/sqrt(var(m_sharpe2[,i+2]))
+  arith_monthly$sharpe6[i+1] = (sum(m_sharpe3[,i+2])/1164)/sqrt(var(m_sharpe3[,i+2]))
+  geom_monthly$mean[i+1] = prod(Monthly_Data_plus[,i+4])^(1/1164)-1
+  geom_monthly$std[i+1] = sqrt(var(Monthly_Data_plus[,i+4]))
+  geom_monthly$rrr[i+1] = (prod(Monthly_Data_plus[,i+4])^(1/1164)-1)/sqrt(var(Monthly_Data_plus[,i+4]))
+  geom_monthly$sharpe1[i+1] = (prod(m_sharpe1g[,i+2])^(1/1164)-1)/geom_monthly$std[i+1]
+  geom_monthly$sharpe2[i+1] = (prod(m_sharpe2g[,i+2])^(1/1164)-1)/geom_monthly$std[i+1]
+  geom_monthly$sharpe3[i+1] = (prod(m_sharpe3g[,i+2])^(1/1164)-1)/geom_monthly$std[i+1]
+  geom_monthly$sharpe4[i+1] = (prod(m_sharpe1g[,i+2])^(1/1164)-1)/sqrt(var(m_sharpe1g[,i+2]))
+  geom_monthly$sharpe5[i+1] = (prod(m_sharpe2g[,i+2])^(1/1164)-1)/sqrt(var(m_sharpe2g[,i+2]))
+  geom_monthly$sharpe6[i+1] = (prod(m_sharpe3g[,i+2])^(1/1164)-1)/sqrt(var(m_sharpe3g[,i+2]))}
 
-for(i in 4:104){
-  for(j in 1:1153)
-}
+arith_monthly$Allocation = factor(arith_monthly$Allocation, levels = c(arith_monthly$Allocation))
+geom_monthly$Allocation = factor(geom_monthly$Allocation, levels = c(geom_monthly$Allocation))
+
+write.csv(arith_monthly, "arith_monthly.csv", col.names=colnames(arith_monthly), row.names = FALSE, quote=TRUE)
+# arith_monthly = read.csv("arith_monthly.csv")
+write.csv(geom_monthly, "geom_monthly.csv", col.names=colnames(geom_monthly), row.names = FALSE, quote=TRUE)
+# geom_monthly = read.csv("geom_monthly.csv")
+
+
+# Yearly averages
+Yearly_Data_plus = Yearly_Data
+Yearly_Data_plus[, 4:104] = 1 + Yearly_Data[, 4:104]
+Yearly_IB = Yearly_IB %>%
+  mutate("risk_free" = (1 + Yearly_IB$t_bill) / (1 + Yearly_IB$inflation) - 1)
+Yearly_IB_plus = Yearly_IB
+Yearly_IB_plus[,2:4] = 1 + Yearly_IB_plus[,2:4]
+y_sharpe1 = Yearly_Data[,c(1,4:104)]
+y_sharpe1[,2:102] = NA
+y_sharpe2 = y_sharpe1
+y_sharpe3 = y_sharpe1
+
+for(i in 0:100){
+  for(j in 1:1153){
+    y_sharpe1[j,i+2] = Yearly_Data[j,i+4] - Yearly_IB$risk_free[j]
+    y_sharpe2[j,i+2] = Yearly_Data[j,i+4] - Yearly_IB$t_bill[j] - Yearly_IB$inflation[j]
+    y_sharpe3[j,i+2] = Yearly_Data[j,i+4] - Yearly_IB$t_bill[j]}}
+
+y_sharpe1g = y_sharpe1
+y_sharpe1g[,2:102] = 1 + y_sharpe1g[,2:102]
+y_sharpe2g = y_sharpe2
+y_sharpe2g[,2:102] = 1 + y_sharpe2g[,2:102]
+y_sharpe3g = m_sharpe3
+y_sharpe3g[,2:102] = 1 + y_sharpe3g[,2:102]
+
+
+# Yearly averages, sharpes, and rrr
+arith_yearly = data.frame(matrix(ncol=12, nrow = 101))
+colnames(arith_yearly) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
+arith_yearly$Allocation = vect0
+arith_yearly$type = "12 Months"
+arith_yearly$Num = c(seq(0,100,1))
+geom_yearly = arith_yearly
+
+for(i in 0:100){
+  arith_yearly$mean[i+1] = sum(Yearly_Data[,i+4])/1153
+  arith_yearly$std[i+1] = sqrt(var(Yearly_Data[,i+4]))
+  arith_yearly$rrr[i+1] = (sum(Yearly_Data[,i+4])/1153)/sqrt(var(Yearly_Data[,i+4]))
+  arith_yearly$sharpe1[i+1] = (sum(y_sharpe1[,i+2])/1153)/arith_yearly$std[i+1]
+  arith_yearly$sharpe2[i+1] = (sum(y_sharpe2[,i+2])/1153)/arith_yearly$std[i+1]
+  arith_yearly$sharpe3[i+1] = (sum(y_sharpe3[,i+2])/1153)/arith_yearly$std[i+1]
+  arith_yearly$sharpe4[i+1] = (sum(y_sharpe1[,i+2])/1153)/sqrt(var(y_sharpe1[,i+2]))
+  arith_yearly$sharpe5[i+1] = (sum(y_sharpe2[,i+2])/1153)/sqrt(var(y_sharpe2[,i+2]))
+  arith_yearly$sharpe6[i+1] = (sum(y_sharpe3[,i+2])/1153)/sqrt(var(y_sharpe3[,i+2]))
+  geom_yearly$mean[i+1] = prod(Yearly_Data_plus[,i+4])^(1/1153)-1
+  geom_yearly$std[i+1] = sqrt(var(Yearly_Data_plus[,i+4]))
+  geom_yearly$rrr[i+1] = (prod(Yearly_Data_plus[,i+4])^(1/1153)-1)/sqrt(var(Yearly_Data_plus[,i+4]))
+  geom_yearly$sharpe1[i+1] = (prod(y_sharpe1g[,i+2])^(1/1153)-1)/geom_yearly$std[i+1]
+  geom_yearly$sharpe2[i+1] = (prod(y_sharpe2g[,i+2])^(1/1153)-1)/geom_yearly$std[i+1]
+  geom_yearly$sharpe3[i+1] = (prod(y_sharpe3g[,i+2])^(1/1153)-1)/geom_yearly$std[i+1]
+  geom_yearly$sharpe4[i+1] = (prod(y_sharpe1g[,i+2])^(1/1153)-1)/sqrt(var(y_sharpe1g[,i+2]))
+  geom_yearly$sharpe5[i+1] = (prod(y_sharpe2g[,i+2])^(1/1153)-1)/sqrt(var(y_sharpe2g[,i+2]))
+  geom_yearly$sharpe6[i+1] = (prod(y_sharpe3g[,i+2])^(1/1153)-1)/sqrt(var(y_sharpe3g[,i+2]))}
+
+arith_yearly$Allocation = factor(arith_yearly$Allocation, levels = c(arith_yearly$Allocation))
+geom_yearly$Allocation = factor(geom_yearly$Allocation, levels = c(geom_yearly$Allocation))
+
+write.csv(arith_yearly, "arith_yearly.csv", col.names=colnames(arith_yearly), row.names = FALSE, quote=TRUE)
+# arith_yearly = read.csv("arith_yearly.csv")
+write.csv(geom_yearly, "geom_yearly.csv", col.names=colnames(geom_yearly), row.names = FALSE, quote=TRUE)
+# geom_yearly = read.csv("geom_yearly.csv")
+
+
+# Yearly 10 averages
+Yearly_Data10_plus = Yearly_Data10
+Yearly_Data10_plus[, 4:104] = 1 + Yearly_Data10[, 4:104]
+Yearly_IB10 = Yearly_IB10 %>%
+  mutate("risk_free" = (1 + Yearly_IB10$t_bill) / (1 + Yearly_IB10$inflation) - 1)
+Yearly_IB10_plus = Yearly_IB10
+Yearly_IB10_plus[,2:4] = 1 + Yearly_IB10_plus[,2:4]
+y10_sharpe1 = Yearly_Data10[,c(1,4:104)]
+y10_sharpe1[,2:102] = NA
+y10_sharpe2 = y10_sharpe1
+y10_sharpe3 = y10_sharpe1
+
+for(i in 0:100){
+  for(j in 1:1045){
+    y10_sharpe1[j,i+2] = Yearly_Data10[j,i+4] - Yearly_IB10$risk_free[j]
+    y10_sharpe2[j,i+2] = Yearly_Data10[j,i+4] - Yearly_IB10$t_bill[j] - Yearly_IB10$inflation[j]
+    y10_sharpe3[j,i+2] = Yearly_Data10[j,i+4] - Yearly_IB10$t_bill[j]}}
+
+y10_sharpe1g = y10_sharpe1
+y10_sharpe1g[,2:102] = 1 + y10_sharpe1g[,2:102]
+y10_sharpe2g = y10_sharpe2
+y10_sharpe2g[,2:102] = 1 + y10_sharpe2g[,2:102]
+y10_sharpe3g = m_sharpe3
+y10_sharpe3g[,2:102] = 1 + y10_sharpe3g[,2:102]
+
+
+# Yearly averages, sharpes, and rrr
+arith_yearly10 = data.frame(matrix(ncol=12, nrow = 101))
+colnames(arith_yearly10) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
+arith_yearly10$Allocation = vect0
+arith_yearly10$type = "120 Months"
+arith_yearly10$Num = c(seq(0,100,1))
+geom_yearly10 = arith_yearly10
+
+for(i in 0:100){
+  arith_yearly10$mean[i+1] = sum(Yearly_Data10[,i+4])/1045
+  arith_yearly10$std[i+1] = sqrt(var(Yearly_Data10[,i+4]))
+  arith_yearly10$rrr[i+1] = (sum(Yearly_Data10[,i+4])/1045)/sqrt(var(Yearly_Data10[,i+4]))
+  arith_yearly10$sharpe1[i+1] = (sum(y10_sharpe1[,i+2])/1045)/arith_yearly10$std[i+1]
+  arith_yearly10$sharpe2[i+1] = (sum(y10_sharpe2[,i+2])/1045)/arith_yearly10$std[i+1]
+  arith_yearly10$sharpe3[i+1] = (sum(y10_sharpe3[,i+2])/1045)/arith_yearly10$std[i+1]
+  arith_yearly10$sharpe4[i+1] = (sum(y10_sharpe1[,i+2])/1045)/sqrt(var(y10_sharpe1[,i+2]))
+  arith_yearly10$sharpe5[i+1] = (sum(y10_sharpe2[,i+2])/1045)/sqrt(var(y10_sharpe2[,i+2]))
+  arith_yearly10$sharpe6[i+1] = (sum(y10_sharpe3[,i+2])/1045)/sqrt(var(y10_sharpe3[,i+2]))
+  geom_yearly10$mean[i+1] = prod(Yearly_Data10_plus[,i+4])^(1/1045)-1
+  geom_yearly10$std[i+1] = sqrt(var(Yearly_Data10_plus[,i+4]))
+  geom_yearly10$rrr[i+1] = (prod(Yearly_Data10_plus[,i+4])^(1/1045)-1)/sqrt(var(Yearly_Data10_plus[,i+4]))
+  geom_yearly10$sharpe1[i+1] = (prod(y10_sharpe1g[,i+2])^(1/1045)-1)/geom_yearly10$std[i+1]
+  geom_yearly10$sharpe2[i+1] = (prod(y10_sharpe2g[,i+2])^(1/1045)-1)/geom_yearly10$std[i+1]
+  geom_yearly10$sharpe3[i+1] = (prod(y10_sharpe3g[,i+2])^(1/1045)-1)/geom_yearly10$std[i+1]
+  geom_yearly10$sharpe3[i+1] = (prod(y10_sharpe3g[,i+2])^(1/1045)-1)/geom_yearly10$std[i+1]
+  geom_yearly10$sharpe4[i+1] = (prod(y10_sharpe1g[,i+2])^(1/1045)-1)/sqrt(var(y10_sharpe1g[,i+2]))
+  geom_yearly10$sharpe5[i+1] = (prod(y10_sharpe2g[,i+2])^(1/1045)-1)/sqrt(var(y10_sharpe2g[,i+2]))
+  geom_yearly10$sharpe6[i+1] = (prod(y10_sharpe3g[,i+2])^(1/1045)-1)/sqrt(var(y10_sharpe3g[,i+2]))}
+
+arith_yearly10$Allocation = factor(arith_yearly10$Allocation, levels = c(arith_yearly10$Allocation))
+geom_yearly10$Allocation = factor(geom_yearly10$Allocation, levels = c(geom_yearly10$Allocation))
+
+write.csv(arith_yearly10, "arith_yearly10.csv", col.names=colnames(arith_yearly10), row.names = FALSE, quote=TRUE)
+# arith_yearly10 = read.csv("arith_yearly10.csv")
+write.csv(geom_yearly10, "geom_yearly10.csv", col.names=colnames(geom_yearly10), row.names = FALSE, quote=TRUE)
+# geom_yearly10 = read.csv("geom_yearly10.csv")
+
+
+
+# Yearly 20 averages
+Yearly_Data20_plus = Yearly_Data20
+Yearly_Data20_plus[, 4:104] = 1 + Yearly_Data20[, 4:104]
+Yearly_IB20 = Yearly_IB20 %>%
+  mutate("risk_free" = (1 + Yearly_IB20$t_bill) / (1 + Yearly_IB20$inflation) - 1)
+Yearly_IB20_plus = Yearly_IB20
+Yearly_IB20_plus[,2:4] = 1 + Yearly_IB20_plus[,2:4]
+y20_sharpe1 = Yearly_Data20[,c(1,4:104)]
+y20_sharpe1[,2:102] = NA
+y20_sharpe2 = y20_sharpe1
+y20_sharpe3 = y20_sharpe1
+
+for(i in 0:100){
+  for(j in 1:925){
+    y20_sharpe1[j,i+2] = Yearly_Data20[j,i+4] - Yearly_IB20$risk_free[j]
+    y20_sharpe2[j,i+2] = Yearly_Data20[j,i+4] - Yearly_IB20$t_bill[j] - Yearly_IB20$inflation[j]
+    y20_sharpe3[j,i+2] = Yearly_Data20[j,i+4] - Yearly_IB20$t_bill[j]}}
+
+y20_sharpe1g = y20_sharpe1
+y20_sharpe1g[,2:102] = 1 + y20_sharpe1g[,2:102]
+y20_sharpe2g = y20_sharpe2
+y20_sharpe2g[,2:102] = 1 + y20_sharpe2g[,2:102]
+y20_sharpe3g = m_sharpe3
+y20_sharpe3g[,2:102] = 1 + y20_sharpe3g[,2:102]
+
+
+# Yearly averages, sharpes, and rrr
+arith_yearly20 = data.frame(matrix(ncol=12, nrow = 101))
+colnames(arith_yearly20) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
+arith_yearly20$Allocation = vect0
+arith_yearly20$type = "240 Months"
+arith_yearly20$Num = c(seq(0,100,1))
+geom_yearly20 = arith_yearly20
+
+for(i in 0:100){
+  arith_yearly20$mean[i+1] = sum(Yearly_Data20[,i+4])/925
+  arith_yearly20$std[i+1] = sqrt(var(Yearly_Data20[,i+4]))
+  arith_yearly20$rrr[i+1] = (sum(Yearly_Data20[,i+4])/925)/sqrt(var(Yearly_Data20[,i+4]))
+  arith_yearly20$sharpe1[i+1] = (sum(y20_sharpe1[,i+2])/925)/arith_yearly20$std[i+1]
+  arith_yearly20$sharpe2[i+1] = (sum(y20_sharpe2[,i+2])/925)/arith_yearly20$std[i+1]
+  arith_yearly20$sharpe3[i+1] = (sum(y20_sharpe3[,i+2])/925)/arith_yearly20$std[i+1]
+  arith_yearly20$sharpe4[i+1] = (sum(y20_sharpe1[,i+2])/925)/sqrt(var(y20_sharpe1[,i+2]))
+  arith_yearly20$sharpe5[i+1] = (sum(y20_sharpe2[,i+2])/925)/sqrt(var(y20_sharpe2[,i+2]))
+  arith_yearly20$sharpe6[i+1] = (sum(y20_sharpe3[,i+2])/925)/sqrt(var(y20_sharpe3[,i+2]))
+  geom_yearly20$mean[i+1] = prod(Yearly_Data20_plus[,i+4])^(1/925)-1
+  geom_yearly20$std[i+1] = sqrt(var(Yearly_Data20_plus[,i+4]))
+  geom_yearly20$rrr[i+1] = (prod(Yearly_Data20_plus[,i+4])^(1/925)-1)/sqrt(var(Yearly_Data20_plus[,i+4]))
+  geom_yearly20$sharpe1[i+1] = (prod(y20_sharpe1g[,i+2])^(1/925)-1)/geom_yearly20$std[i+1]
+  geom_yearly20$sharpe2[i+1] = (prod(y20_sharpe2g[,i+2])^(1/925)-1)/geom_yearly20$std[i+1]
+  geom_yearly20$sharpe3[i+1] = (prod(y20_sharpe3g[,i+2])^(1/925)-1)/geom_yearly10$std[i+1]
+  geom_yearly20$sharpe4[i+1] = (prod(y20_sharpe1g[,i+2])^(1/925)-1)/sqrt(var(y20_sharpe1g[,i+2]))
+  geom_yearly20$sharpe5[i+1] = (prod(y20_sharpe2g[,i+2])^(1/925)-1)/sqrt(var(y20_sharpe2g[,i+2]))
+  geom_yearly20$sharpe6[i+1] = (prod(y20_sharpe3g[,i+2])^(1/925)-1)/sqrt(var(y20_sharpe3g[,i+2]))}
+
+arith_yearly20$Allocation = factor(arith_yearly20$Allocation, levels = c(arith_yearly20$Allocation))
+geom_yearly20$Allocation = factor(geom_yearly20$Allocation, levels = c(geom_yearly20$Allocation))
+
+write.csv(arith_yearly20, "arith_yearly20.csv", col.names=colnames(arith_yearly20), row.names = FALSE, quote=TRUE)
+# arith_yearly20 = read.csv("arith_yearly20.csv")
+write.csv(geom_yearly20, "geom_yearly20.csv", col.names=colnames(geom_yearly20), row.names = FALSE, quote=TRUE)
+# geom_yearly20 = read.csv("geom_yearly20.csv")
+
+
+
+# Yearly 30 averages
+Yearly_Data30_plus = Yearly_Data30
+Yearly_Data30_plus[, 4:104] = 1 + Yearly_Data30[, 4:104]
+Yearly_IB30 = Yearly_IB30 %>%
+  mutate("risk_free" = (1 + Yearly_IB30$t_bill) / (1 + Yearly_IB30$inflation) - 1)
+Yearly_IB30_plus = Yearly_IB30
+Yearly_IB30_plus[,2:4] = 1 + Yearly_IB30_plus[,2:4]
+y30_sharpe1 = Yearly_Data30[,c(1,4:104)]
+y30_sharpe1[,2:102] = NA
+y30_sharpe2 = y30_sharpe1
+y30_sharpe3 = y30_sharpe1
+
+for(i in 0:100){
+  for(j in 1:805){
+    y30_sharpe1[j,i+2] = Yearly_Data30[j,i+4] - Yearly_IB30$risk_free[j]
+    y30_sharpe2[j,i+2] = Yearly_Data30[j,i+4] - Yearly_IB30$t_bill[j] - Yearly_IB30$inflation[j]
+    y30_sharpe3[j,i+2] = Yearly_Data30[j,i+4] - Yearly_IB30$t_bill[j]}}
+
+y30_sharpe1g = y30_sharpe1
+y30_sharpe1g[,2:102] = 1 + y30_sharpe1g[,2:102]
+y30_sharpe2g = y30_sharpe2
+y30_sharpe2g[,2:102] = 1 + y30_sharpe2g[,2:102]
+y30_sharpe3g = m_sharpe3
+y30_sharpe3g[,2:102] = 1 + y30_sharpe3g[,2:102]
+
+
+# Yearly averages, sharpes, and rrr
+arith_yearly30 = data.frame(matrix(ncol=12, nrow = 101))
+colnames(arith_yearly30) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
+arith_yearly30$Allocation = vect0
+arith_yearly30$type = "360 Months"
+arith_yearly30$Num = c(seq(0,100,1))
+geom_yearly30 = arith_yearly30
+
+for(i in 0:100){
+  arith_yearly30$mean[i+1] = sum(Yearly_Data30[,i+4])/805
+  arith_yearly30$std[i+1] = sqrt(var(Yearly_Data30[,i+4]))
+  arith_yearly30$rrr[i+1] = (sum(Yearly_Data30[,i+4])/805)/sqrt(var(Yearly_Data30[,i+4]))
+  arith_yearly30$sharpe1[i+1] = (sum(y30_sharpe1[,i+2])/805)/arith_yearly30$std[i+1]
+  arith_yearly30$sharpe2[i+1] = (sum(y30_sharpe2[,i+2])/805)/arith_yearly30$std[i+1]
+  arith_yearly30$sharpe3[i+1] = (sum(y30_sharpe3[,i+2])/805)/arith_yearly30$std[i+1]
+  arith_yearly30$sharpe4[i+1] = (sum(y30_sharpe1[,i+2])/805)/sqrt(var(y30_sharpe1[,i+2]))
+  arith_yearly30$sharpe5[i+1] = (sum(y30_sharpe2[,i+2])/805)/sqrt(var(y30_sharpe2[,i+2]))
+  arith_yearly30$sharpe6[i+1] = (sum(y30_sharpe3[,i+2])/805)/sqrt(var(y30_sharpe3[,i+2]))
+  geom_yearly30$mean[i+1] = prod(Yearly_Data30_plus[,i+4])^(1/805)-1
+  geom_yearly30$std[i+1] = sqrt(var(Yearly_Data30_plus[,i+4]))
+  geom_yearly30$rrr[i+1] = (prod(Yearly_Data30_plus[,i+4])^(1/805)-1)/sqrt(var(Yearly_Data30_plus[,i+4]))
+  geom_yearly30$sharpe1[i+1] = (prod(y30_sharpe1g[,i+2])^(1/805)-1)/geom_yearly30$std[i+1]
+  geom_yearly30$sharpe2[i+1] = (prod(y30_sharpe2g[,i+2])^(1/805)-1)/geom_yearly30$std[i+1]
+  geom_yearly30$sharpe3[i+1] = (prod(y30_sharpe3g[,i+2])^(1/805)-1)/geom_yearly30$std[i+1]
+  geom_yearly30$sharpe4[i+1] = (prod(y30_sharpe1g[,i+2])^(1/805)-1)/sqrt(var(y30_sharpe1g[,i+2]))
+  geom_yearly30$sharpe5[i+1] = (prod(y30_sharpe2g[,i+2])^(1/805)-1)/sqrt(var(y30_sharpe2g[,i+2]))
+  geom_yearly30$sharpe6[i+1] = (prod(y30_sharpe3g[,i+2])^(1/805)-1)/sqrt(var(y30_sharpe3g[,i+2]))}
+
+arith_yearly30$Allocation = factor(arith_yearly30$Allocation, levels = c(arith_yearly30$Allocation))
+geom_yearly30$Allocation = factor(geom_yearly30$Allocation, levels = c(geom_yearly30$Allocation))
+
+write.csv(arith_yearly30, "arith_yearly30.csv", col.names=colnames(arith_yearly30), row.names = FALSE, quote=TRUE)
+# arith_yearly30 = read.csv("arith_yearly30.csv")
+write.csv(geom_yearly30, "geom_yearly30.csv", col.names=colnames(geom_yearly30), row.names = FALSE, quote=TRUE)
+# geom_yearly30 = read.csv("geom_yearly30.csv")
+
+arith = rbind(arith_monthly, arith_yearly, arith_yearly10, arith_yearly20, arith_yearly30)
+geom = rbind(geom_monthly, geom_yearly, geom_yearly10, geom_yearly20, geom_yearly30)
+
+
+for(h in 1:10){
+  for(i in 4:11){
+    if(h==1){
+      frame = arith_monthly}
+    if(h==2){
+      frame = geom_monthly}
+    if(h==3){
+      frame = arith_yearly}
+    if(h==4){
+      frame = geom_yearly}
+    if(h==5){
+      frame = arith_yearly10}
+    if(h==6){
+      frame = geom_yearly10}
+    if(h==7){
+      frame = arith_yearly20}
+    if(h==8){
+      frame = geom_yearly20}
+    if(h==9){
+      frame = arith_yearly30}
+    if(h==10){
+      frame = geom_yearly30}
+    if(i == 4){
+      frame = frame[,  c(1,2,i,i-1,12)]}
+    if(i != 4){
+      frame = frame[,  c(1,2,i,12)]}
+    min = min(frame[,3])
+    max = max(frame[,3])
+    vect = vector()
+    vect = append(vect, c(1,61,101))
+    for(j in 1:101){
+      if(i == 4){
+        if(frame[j, 3] == min){
+          vect = append(vect, frame$Num[j])}}
+      else{
+        if(i != 4){
+          if(frame[j, 3] == max){
+            vect = append(vect, frame$Num[j])}}}}
+    vect = unique(vect)
+    vect = sort(vect)
+    signif_pts = frame[c(vect),]
+    if(i == 4){
+      signif_pts <- signif_pts %>%
+        mutate("Rank" = rank(signif_pts[,3]))}
+    if(i != 4){
+      signif_pts <- signif_pts %>%
+        mutate("Rank" = 5 - rank(signif_pts[,3]))}
+    signif_pts["Rank_Color"] = NA
+    vect_col = vector()
+    for(k in 1:4){
+      if(as.integer(signif_pts$Rank[k]) == 1){
+        vect_col = append(vect_col, "green")}
+      else{
+        if(as.integer(signif_pts$Rank[k]) == 2){
+          vect_col = append(vect_col, "yellow")}
+        else{
+          if(as.integer(signif_pts$Rank[k]) == 3){
+            vect_col = append(vect_col, "orange")}
+          else{
+            if(as.integer(signif_pts$Rank[k]) == 4){
+              vect_col = append(vect_col, "red")}}}}}
+    signif_pts$Rank_Color = vect_col
+    if(h%%2==1){
+      type = "arith"}
+    if(h%%2==0){
+      type = "geom"}
+    if(h==1 | h==2){
+      name = "monthly"}
+    if(h==3 | h==4){
+      name = "yearly"}
+    if(h==5 | h==6){
+      name = "yearly10"}
+    if(h==7 | h==8){
+      name = "yearly20"}
+    if(h==9 | h==10){
+      name = "yearly30"}
+    assign(paste0("signif_", type, "_", name, "_", colnames(frame)[3]), signif_pts)}}
+
+
+signif_arith_std = rbind(signif_arith_monthly_std, signif_arith_yearly_std, signif_arith_yearly10_std, 
+                         signif_arith_yearly20_std, signif_arith_yearly30_std)
+signif_arith_std$type = factor(signif_arith_std$type, levels = c(signif_arith_std$type))
+
+signif_arith_rrr= rbind(signif_arith_monthly_rrr, signif_arith_yearly_rrr, signif_arith_yearly10_rrr, 
+                        signif_arith_yearly20_rrr, signif_arith_yearly30_rrr)
+signif_arith_rrr$type = factor(signif_arith_rrr$type, levels = c(signif_arith_rrr$type))
+
+signif_arith_sharpe1= rbind(signif_arith_monthly_sharpe1, signif_arith_yearly_sharpe1, signif_arith_yearly10_sharpe1, 
+                            signif_arith_yearly20_sharpe1, signif_arith_yearly30_sharpe1)
+signif_arith_sharpe1$type = factor(signif_arith_sharpe1$type, levels = c(signif_arith_sharpe1$type))
+
+signif_arith_sharpe2= rbind(signif_arith_monthly_sharpe2, signif_arith_yearly_sharpe2, signif_arith_yearly10_sharpe2, 
+                            signif_arith_yearly20_sharpe2, signif_arith_yearly30_sharpe2)
+signif_arith_sharpe2$type = factor(signif_arith_sharpe2$type, levels = c(signif_arith_sharpe2$type))
+
+signif_arith_sharpe3= rbind(signif_arith_monthly_sharpe3, signif_arith_yearly_sharpe3, signif_arith_yearly10_sharpe3, 
+                            signif_arith_yearly20_sharpe3, signif_arith_yearly30_sharpe3)
+signif_arith_sharpe3$type = factor(signif_arith_sharpe3$type, levels = c(signif_arith_sharpe3$type))
+
+signif_arith_sharpe4= rbind(signif_arith_monthly_sharpe4, signif_arith_yearly_sharpe4, signif_arith_yearly10_sharpe4, 
+                            signif_arith_yearly20_sharpe4, signif_arith_yearly30_sharpe4)
+signif_arith_sharpe4$type = factor(signif_arith_sharpe4$type, levels = c(signif_arith_sharpe4$type))
+
+signif_arith_sharpe5= rbind(signif_arith_monthly_sharpe5, signif_arith_yearly_sharpe5, signif_arith_yearly10_sharpe5, 
+                            signif_arith_yearly20_sharpe5, signif_arith_yearly30_sharpe5)
+signif_arith_sharpe5$type = factor(signif_arith_sharpe5$type, levels = c(signif_arith_sharpe5$type))
+
+signif_arith_sharpe6= rbind(signif_arith_monthly_sharpe6, signif_arith_yearly_sharpe6, signif_arith_yearly10_sharpe6, 
+                            signif_arith_yearly20_sharpe6, signif_arith_yearly30_sharpe6)
+signif_arith_sharpe6$type = factor(signif_arith_sharpe6$type, levels = c(signif_arith_sharpe6$type))
+
+signif_geom_std = rbind(signif_geom_monthly_std, signif_geom_yearly_std, signif_geom_yearly10_std, 
+                         signif_geom_yearly20_std, signif_geom_yearly30_std)
+signif_geom_std$type = factor(signif_geom_std$type, levels = c(signif_geom_std$type))
+
+signif_geom_rrr= rbind(signif_geom_monthly_rrr, signif_geom_yearly_rrr, signif_geom_yearly10_rrr, 
+                        signif_geom_yearly20_rrr, signif_geom_yearly30_rrr)
+signif_geom_rrr$type = factor(signif_geom_rrr$type, levels = c(signif_geom_rrr$type))
+
+signif_geom_sharpe1= rbind(signif_geom_monthly_sharpe1, signif_geom_yearly_sharpe1, signif_geom_yearly10_sharpe1, 
+                            signif_geom_yearly20_sharpe1, signif_geom_yearly30_sharpe1)
+signif_geom_sharpe1$type = factor(signif_geom_sharpe1$type, levels = c(signif_geom_sharpe1$type))
+
+signif_geom_sharpe2= rbind(signif_geom_monthly_sharpe2, signif_geom_yearly_sharpe2, signif_geom_yearly10_sharpe2, 
+                            signif_geom_yearly20_sharpe2, signif_geom_yearly30_sharpe2)
+signif_geom_sharpe2$type = factor(signif_geom_sharpe2$type, levels = c(signif_geom_sharpe2$type))
+
+signif_geom_sharpe3= rbind(signif_geom_monthly_sharpe3, signif_geom_yearly_sharpe3, signif_geom_yearly10_sharpe3, 
+                            signif_geom_yearly20_sharpe3, signif_geom_yearly30_sharpe3)
+signif_geom_sharpe3$type = factor(signif_geom_sharpe3$type, levels = c(signif_geom_sharpe3$type))
+
+signif_geom_sharpe4= rbind(signif_geom_monthly_sharpe4, signif_geom_yearly_sharpe4, signif_geom_yearly10_sharpe4, 
+                            signif_geom_yearly20_sharpe4, signif_geom_yearly30_sharpe4)
+signif_geom_sharpe4$type = factor(signif_geom_sharpe4$type, levels = c(signif_geom_sharpe4$type))
+
+signif_geom_sharpe5= rbind(signif_geom_monthly_sharpe5, signif_geom_yearly_sharpe5, signif_geom_yearly10_sharpe5, 
+                            signif_geom_yearly20_sharpe5, signif_geom_yearly30_sharpe5)
+signif_geom_sharpe5$type = factor(signif_geom_sharpe5$type, levels = c(signif_geom_sharpe5$type))
+
+signif_geom_sharpe6= rbind(signif_geom_monthly_sharpe6, signif_geom_yearly_sharpe6, signif_geom_yearly10_sharpe6, 
+                            signif_geom_yearly20_sharpe6, signif_geom_yearly30_sharpe6)
+signif_geom_sharpe6$type = factor(signif_geom_sharpe6$type, levels = c(signif_geom_sharpe6$type))
+
+
+ 
+```
+
+
+```{r}
+
+signif_pts0 = signif_arith_std
+col_pal <- c(signif_pts0$Rank_Color)
+ggplot(data = arith_monthly, aes(x = std, y = mean, color = factor(type))) + 
+  geom_point() + 
+  geom_label(data=signif_pts0[2,], aes(x = std, y = mean, 
+                                   label = paste0(
+                                     "Mean: ", round(mean, 4), "\n", 
+                                     "SD: ", round(std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.005) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
+  scale_color_manual(values = col_pal)+
+  labs(title = "Arithmetic Monthly Average Returns: \n Mean vs. Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =18),
+        axis.text = element_text(size = 12),
+        axis.title = element_text(size=15),
+        legend.position = c(0.75, 0.25),
+        legend.text = element_text(size=12),
+        legend.title = element_text(size=15))
+
+
+```
+
+```{r}  
+  
+
 
 
 
