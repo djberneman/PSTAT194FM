@@ -15,6 +15,8 @@ library(lubridate)
 install.packages("ggrepel")
 library(ggrepel)
 library(readxl)
+install.packages("gridExtra")
+library(gridExtra)
 install.packages("cowplot")
 library(cowplot)
 install.packages("ggpubr")
@@ -57,8 +59,6 @@ for(i in 2:3){
 Yearly_Data = Yearly_Data[1:1153,]
 Yearly_IB = Yearly_IB[1:1153,]
 
-prod(Monthly_Data$Large_Cap[2:11])^(1/10)
-
 # 10 year period
 Yearly_Data10 = Monthly_Data
 Yearly_IB10 = IB
@@ -70,8 +70,6 @@ for(i in 2:3){
     Yearly_IB10[j,i] = prod(IB_plus[x:y, i]) - 1}}
 Yearly_Data10 = Yearly_Data10[1:1045,]
 Yearly_IB10 = Yearly_IB10[1:1045,]
-
-
 
 
 # 20 year period
@@ -86,7 +84,6 @@ for(i in 2:3){
 Yearly_Data20 = Yearly_Data20[1:925,]
 Yearly_IB20 = Yearly_IB20[1:925,]
 
-
 # 30 year period
 Yearly_Data30 = Monthly_Data
 Yearly_IB30 = IB
@@ -94,8 +91,8 @@ for(i in 2:3){
   for(j in 1:805){
     x=j
     y=x+359
-    Yearly_Data30[j,i] = prod(Monthly_Data_plus[x:y, i])
-    Yearly_IB30[j,i] = prod(IB_plus[x:y, i])}}
+    Yearly_Data30[j,i] = prod(Monthly_Data_plus[x:y, i])-1
+    Yearly_IB30[j,i] = prod(IB_plus[x:y, i])-1}}
 Yearly_Data30 = Yearly_Data30[1:805,]
 Yearly_IB30 = Yearly_IB30[1:805,]
 
@@ -118,6 +115,10 @@ for(i in 0:100){
     Yearly_Data30[j, i+4] = alpha*Yearly_Data30$Large_Cap[j] + (1-alpha)*Yearly_Data30$Fixed[j]}}
 
 
+```
+
+# Monthly Averages
+```{r}
 # monthly averages
 Monthly_Data_plus = Monthly_Data
 Monthly_Data_plus[, 4:104] = 1 + Monthly_Data[, 4:104]
@@ -128,26 +129,23 @@ IB_plus[,2:4] = 1 + IB_plus[,2:4]
 m_sharpe1 = Monthly_Data[,c(1,4:104)]
 m_sharpe1[,2:102] = NA
 m_sharpe2 = m_sharpe1
-m_sharpe3 = m_sharpe1
 
 for(i in 0:100){
-  for(j in 1:1164){
-    m_sharpe1[j,i+2] = Monthly_Data[j,i+4] - IB$risk_free[j]
-    m_sharpe2[j,i+2] = Monthly_Data[j,i+4] - IB$t_bill[j] - IB$inflation[j]
-    m_sharpe3[j,i+2] = Monthly_Data[j,i+4] - IB$t_bill[j]}}
+  Data = cbind(Monthly_Data[,1], IB[,2:4], Monthly_Data[,i+4])
+  Data = Data %>%
+    mutate("sharpe1" = Data[,5] - Data$risk_free) %>%
+    mutate("sharpe2" = Data[,5] - Data$t_bill + Data$inflation)
+  m_sharpe1[,i+2] = Data$sharpe1
+  m_sharpe2[,i+2] = Data$sharpe2}
 
 m_sharpe1g = m_sharpe1
 m_sharpe1g[,2:102] = 1 + m_sharpe1g[,2:102]
 m_sharpe2g = m_sharpe2
 m_sharpe2g[,2:102] = 1 + m_sharpe2g[,2:102]
-m_sharpe3g = m_sharpe3
-m_sharpe3g[,2:102] = 1 + m_sharpe3g[,2:102]
-
-
 
 # monthly averages, sharpes, and rrr
-arith_monthly = data.frame(matrix(ncol=12, nrow = 101))
-colnames(arith_monthly) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
+arith_monthly = data.frame(matrix(ncol=10, nrow = 101))
+colnames(arith_monthly) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "type")
 arith_monthly$Allocation = vect0
 arith_monthly$type = "Monthly"
 arith_monthly$Num = c(seq(0,100,1))
@@ -159,19 +157,16 @@ for(i in 0:100){
   arith_monthly$rrr[i+1] = (sum(Monthly_Data[,i+4])/1164)/sqrt(var(Monthly_Data[,i+4]))
   arith_monthly$sharpe1[i+1] = (sum(m_sharpe1[,i+2])/1164)/arith_monthly$std[i+1]
   arith_monthly$sharpe2[i+1] = (sum(m_sharpe2[,i+2])/1164)/arith_monthly$std[i+1]
-  arith_monthly$sharpe3[i+1] = (sum(m_sharpe3[,i+2])/1164)/arith_monthly$std[i+1]
-  arith_monthly$sharpe4[i+1] = (sum(m_sharpe1[,i+2])/1164)/sqrt(var(m_sharpe1[,i+2]))
-  arith_monthly$sharpe5[i+1] = (sum(m_sharpe2[,i+2])/1164)/sqrt(var(m_sharpe2[,i+2]))
-  arith_monthly$sharpe6[i+1] = (sum(m_sharpe3[,i+2])/1164)/sqrt(var(m_sharpe3[,i+2]))
+  arith_monthly$sharpe3[i+1] = (sum(m_sharpe1[,i+2])/1164)/sqrt(var(m_sharpe1[,i+2]))
+  arith_monthly$sharpe4[i+1] = (sum(m_sharpe2[,i+2])/1164)/sqrt(var(m_sharpe2[,i+2]))
   geom_monthly$mean[i+1] = prod(Monthly_Data_plus[,i+4])^(1/1164)-1
   geom_monthly$std[i+1] = sqrt(var(Monthly_Data_plus[,i+4]))
   geom_monthly$rrr[i+1] = (prod(Monthly_Data_plus[,i+4])^(1/1164)-1)/sqrt(var(Monthly_Data_plus[,i+4]))
   geom_monthly$sharpe1[i+1] = (prod(m_sharpe1g[,i+2])^(1/1164)-1)/geom_monthly$std[i+1]
   geom_monthly$sharpe2[i+1] = (prod(m_sharpe2g[,i+2])^(1/1164)-1)/geom_monthly$std[i+1]
-  geom_monthly$sharpe3[i+1] = (prod(m_sharpe3g[,i+2])^(1/1164)-1)/geom_monthly$std[i+1]
-  geom_monthly$sharpe4[i+1] = (prod(m_sharpe1g[,i+2])^(1/1164)-1)/sqrt(var(m_sharpe1g[,i+2]))
-  geom_monthly$sharpe5[i+1] = (prod(m_sharpe2g[,i+2])^(1/1164)-1)/sqrt(var(m_sharpe2g[,i+2]))
-  geom_monthly$sharpe6[i+1] = (prod(m_sharpe3g[,i+2])^(1/1164)-1)/sqrt(var(m_sharpe3g[,i+2]))}
+  geom_monthly$sharpe3[i+1] = (prod(m_sharpe1g[,i+2])^(1/1164)-1)/sqrt(var(m_sharpe1g[,i+2]))
+  geom_monthly$sharpe4[i+1] = (prod(m_sharpe2g[,i+2])^(1/1164)-1)/sqrt(var(m_sharpe2g[,i+2]))
+  }
 
 arith_monthly$Allocation = factor(arith_monthly$Allocation, levels = c(arith_monthly$Allocation))
 geom_monthly$Allocation = factor(geom_monthly$Allocation, levels = c(geom_monthly$Allocation))
@@ -180,9 +175,11 @@ write.csv(arith_monthly, "arith_monthly.csv", col.names=colnames(arith_monthly),
 # arith_monthly = read.csv("arith_monthly.csv")
 write.csv(geom_monthly, "geom_monthly.csv", col.names=colnames(geom_monthly), row.names = FALSE, quote=TRUE)
 # geom_monthly = read.csv("geom_monthly.csv")
+```
 
-
-# Yearly averages
+# 12 Month Averages
+```{r}
+# 12 month averages
 Yearly_Data_plus = Yearly_Data
 Yearly_Data_plus[, 4:104] = 1 + Yearly_Data[, 4:104]
 Yearly_IB = Yearly_IB %>%
@@ -192,62 +189,62 @@ Yearly_IB_plus[,2:4] = 1 + Yearly_IB_plus[,2:4]
 y_sharpe1 = Yearly_Data[,c(1,4:104)]
 y_sharpe1[,2:102] = NA
 y_sharpe2 = y_sharpe1
-y_sharpe3 = y_sharpe1
 
 for(i in 0:100){
-  for(j in 1:1153){
-    y_sharpe1[j,i+2] = Yearly_Data[j,i+4] - Yearly_IB$risk_free[j]
-    y_sharpe2[j,i+2] = Yearly_Data[j,i+4] - Yearly_IB$t_bill[j] - Yearly_IB$inflation[j]
-    y_sharpe3[j,i+2] = Yearly_Data[j,i+4] - Yearly_IB$t_bill[j]}}
+  Data = cbind(Yearly_Data[,1], Yearly_IB[,2:4], Yearly_Data[,i+4])
+  Data = Data %>%
+    mutate("sharpe1" = Data[,5] - Data$risk_free) %>%
+    mutate("sharpe2" = Data[,5] - Data$t_bill + Data$inflation)
+  y_sharpe1[,i+2] = Data$sharpe1
+  y_sharpe2[,i+2] = Data$sharpe2}
 
 y_sharpe1g = y_sharpe1
 y_sharpe1g[,2:102] = 1 + y_sharpe1g[,2:102]
 y_sharpe2g = y_sharpe2
 y_sharpe2g[,2:102] = 1 + y_sharpe2g[,2:102]
-y_sharpe3g = m_sharpe3
-y_sharpe3g[,2:102] = 1 + y_sharpe3g[,2:102]
-
 
 # Yearly averages, sharpes, and rrr
-arith_yearly = data.frame(matrix(ncol=12, nrow = 101))
-colnames(arith_yearly) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
-arith_yearly$Allocation = vect0
-arith_yearly$type = "12 Months"
-arith_yearly$Num = c(seq(0,100,1))
-geom_yearly = arith_yearly
+arith_Yearly = data.frame(matrix(ncol=10, nrow = 101))
+colnames(arith_Yearly) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "type")
+arith_Yearly$Allocation = vect0
+arith_Yearly$type = "12 Months"
+arith_Yearly$Num = c(seq(0,100,1))
+geom_Yearly = arith_Yearly
 
 for(i in 0:100){
-  arith_yearly$mean[i+1] = sum(Yearly_Data[,i+4])/1153
-  arith_yearly$std[i+1] = sqrt(var(Yearly_Data[,i+4]))
-  arith_yearly$rrr[i+1] = (sum(Yearly_Data[,i+4])/1153)/sqrt(var(Yearly_Data[,i+4]))
-  arith_yearly$sharpe1[i+1] = (sum(y_sharpe1[,i+2])/1153)/arith_yearly$std[i+1]
-  arith_yearly$sharpe2[i+1] = (sum(y_sharpe2[,i+2])/1153)/arith_yearly$std[i+1]
-  arith_yearly$sharpe3[i+1] = (sum(y_sharpe3[,i+2])/1153)/arith_yearly$std[i+1]
-  arith_yearly$sharpe4[i+1] = (sum(y_sharpe1[,i+2])/1153)/sqrt(var(y_sharpe1[,i+2]))
-  arith_yearly$sharpe5[i+1] = (sum(y_sharpe2[,i+2])/1153)/sqrt(var(y_sharpe2[,i+2]))
-  arith_yearly$sharpe6[i+1] = (sum(y_sharpe3[,i+2])/1153)/sqrt(var(y_sharpe3[,i+2]))
-  geom_yearly$mean[i+1] = prod(Yearly_Data_plus[,i+4])^(1/1153)-1
-  geom_yearly$std[i+1] = sqrt(var(Yearly_Data_plus[,i+4]))
-  geom_yearly$rrr[i+1] = (prod(Yearly_Data_plus[,i+4])^(1/1153)-1)/sqrt(var(Yearly_Data_plus[,i+4]))
-  geom_yearly$sharpe1[i+1] = (prod(y_sharpe1g[,i+2])^(1/1153)-1)/geom_yearly$std[i+1]
-  geom_yearly$sharpe2[i+1] = (prod(y_sharpe2g[,i+2])^(1/1153)-1)/geom_yearly$std[i+1]
-  geom_yearly$sharpe3[i+1] = (prod(y_sharpe3g[,i+2])^(1/1153)-1)/geom_yearly$std[i+1]
-  geom_yearly$sharpe4[i+1] = (prod(y_sharpe1g[,i+2])^(1/1153)-1)/sqrt(var(y_sharpe1g[,i+2]))
-  geom_yearly$sharpe5[i+1] = (prod(y_sharpe2g[,i+2])^(1/1153)-1)/sqrt(var(y_sharpe2g[,i+2]))
-  geom_yearly$sharpe6[i+1] = (prod(y_sharpe3g[,i+2])^(1/1153)-1)/sqrt(var(y_sharpe3g[,i+2]))}
+  arith_Yearly$mean[i+1] = sum(Yearly_Data[,i+4])/1153
+  arith_Yearly$std[i+1] = sqrt(var(Yearly_Data[,i+4]))
+  arith_Yearly$rrr[i+1] = (sum(Yearly_Data[,i+4])/1153)/sqrt(var(Yearly_Data[,i+4]))
+  arith_Yearly$sharpe1[i+1] = (sum(y_sharpe1[,i+2])/1153)/arith_Yearly$std[i+1]
+  arith_Yearly$sharpe2[i+1] = (sum(y_sharpe2[,i+2])/1153)/arith_Yearly$std[i+1]
+  arith_Yearly$sharpe3[i+1] = (sum(y_sharpe1[,i+2])/1153)/sqrt(var(y_sharpe1[,i+2]))
+  arith_Yearly$sharpe4[i+1] = (sum(y_sharpe2[,i+2])/1153)/sqrt(var(y_sharpe2[,i+2]))
+  geom_Yearly$mean[i+1] = prod(Yearly_Data_plus[,i+4])^(1/1153)-1
+  geom_Yearly$std[i+1] = sqrt(var(Yearly_Data_plus[,i+4]))
+  geom_Yearly$rrr[i+1] = (prod(Yearly_Data_plus[,i+4])^(1/1153)-1)/sqrt(var(Yearly_Data_plus[,i+4]))
+  geom_Yearly$sharpe1[i+1] = (prod(y_sharpe1g[,i+2])^(1/1153)-1)/geom_Yearly$std[i+1]
+  geom_Yearly$sharpe2[i+1] = (prod(y_sharpe2g[,i+2])^(1/1153)-1)/geom_Yearly$std[i+1]
+  geom_Yearly$sharpe3[i+1] = (prod(y_sharpe1g[,i+2])^(1/1153)-1)/sqrt(var(y_sharpe1g[,i+2]))
+  geom_Yearly$sharpe4[i+1] = (prod(y_sharpe2g[,i+2])^(1/1153)-1)/sqrt(var(y_sharpe2g[,i+2]))
+  }
 
-arith_yearly$Allocation = factor(arith_yearly$Allocation, levels = c(arith_yearly$Allocation))
-geom_yearly$Allocation = factor(geom_yearly$Allocation, levels = c(geom_yearly$Allocation))
+arith_Yearly$Allocation = factor(arith_Yearly$Allocation, levels = c(arith_Yearly$Allocation))
+geom_Yearly$Allocation = factor(geom_Yearly$Allocation, levels = c(geom_Yearly$Allocation))
 
-write.csv(arith_yearly, "arith_yearly.csv", col.names=colnames(arith_yearly), row.names = FALSE, quote=TRUE)
-# arith_yearly = read.csv("arith_yearly.csv")
-write.csv(geom_yearly, "geom_yearly.csv", col.names=colnames(geom_yearly), row.names = FALSE, quote=TRUE)
-# geom_yearly = read.csv("geom_yearly.csv")
+write.csv(arith_Yearly, "arith_Yearly.csv", col.names=colnames(arith_Yearly), row.names = FALSE, quote=TRUE)
+# arith_Yearly = read.csv("arith_Yearly.csv")
+write.csv(geom_Yearly, "geom_Yearly.csv", col.names=colnames(geom_Yearly), row.names = FALSE, quote=TRUE)
+# geom_Yearly = read.csv("geom_Yearly.csv")
+```
 
 
-# Yearly 10 averages
+# 120 Month Averages
+```{r}
+# 12 month averages
 Yearly_Data10_plus = Yearly_Data10
 Yearly_Data10_plus[, 4:104] = 1 + Yearly_Data10[, 4:104]
+Yearly_Data10_120 = Yearly_Data10_plus
+Yearly_Data10_120[,4:104] = Yearly_Data10_120[,4:104]^(1/120)
 Yearly_IB10 = Yearly_IB10 %>%
   mutate("risk_free" = (1 + Yearly_IB10$t_bill) / (1 + Yearly_IB10$inflation) - 1)
 Yearly_IB10_plus = Yearly_IB10
@@ -255,64 +252,78 @@ Yearly_IB10_plus[,2:4] = 1 + Yearly_IB10_plus[,2:4]
 y10_sharpe1 = Yearly_Data10[,c(1,4:104)]
 y10_sharpe1[,2:102] = NA
 y10_sharpe2 = y10_sharpe1
-y10_sharpe3 = y10_sharpe1
+std_10 = data.frame(matrix(ncol=4, nrow=101))
+colnames(std_10) = c("Allocation", "Sharpe1", "Sharpe2", "Sharpe3")
+std_10$Allocation = vect0
+sharpe_choice10 = std_10
 
 for(i in 0:100){
-  for(j in 1:1045){
-    y10_sharpe1[j,i+2] = Yearly_Data10[j,i+4] - Yearly_IB10$risk_free[j]
-    y10_sharpe2[j,i+2] = Yearly_Data10[j,i+4] - Yearly_IB10$t_bill[j] - Yearly_IB10$inflation[j]
-    y10_sharpe3[j,i+2] = Yearly_Data10[j,i+4] - Yearly_IB10$t_bill[j]}}
+  Data = cbind(Yearly_Data10[,1], Yearly_IB10[,2:4], Yearly_Data10[,i+4])
+  Data = Data %>%
+    mutate("sharpe1" = Data[,5] - Data$risk_free) %>%
+    mutate("sharpe2" = Data[,5] - Data$t_bill + Data$inflation)
+  y10_sharpe1[,i+2] = Data$sharpe1
+  std_10$Sharpe1[i+1] = sqrt(var(Data$sharpe1))
+  y10_sharpe2[,i+2] = Data$sharpe2
+  std_10$Sharpe2[i+1] = sqrt(var(Data$sharpe2))}
 
 y10_sharpe1g = y10_sharpe1
-y10_sharpe1g[,2:102] = 1 + y10_sharpe1g[,2:102]
-y10_sharpe2g = y10_sharpe2
-y10_sharpe2g[,2:102] = 1 + y10_sharpe2g[,2:102]
-y10_sharpe3g = m_sharpe3
-y10_sharpe3g[,2:102] = 1 + y10_sharpe3g[,2:102]
-
-
-# Yearly averages, sharpes, and rrr
-arith_yearly10 = data.frame(matrix(ncol=12, nrow = 101))
-colnames(arith_yearly10) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
-arith_yearly10$Allocation = vect0
-arith_yearly10$type = "120 Months"
-arith_yearly10$Num = c(seq(0,100,1))
-geom_yearly10 = arith_yearly10
+y10_sharpe1g[,2:102] = NA
+y10_sharpe2g = y10_sharpe1g
 
 for(i in 0:100){
-  arith_yearly10$mean[i+1] = sum(Yearly_Data10[,i+4])/1045
-  arith_yearly10$std[i+1] = sqrt(var(Yearly_Data10[,i+4]))
-  arith_yearly10$rrr[i+1] = (sum(Yearly_Data10[,i+4])/1045)/sqrt(var(Yearly_Data10[,i+4]))
-  arith_yearly10$sharpe1[i+1] = (sum(y10_sharpe1[,i+2])/1045)/arith_yearly10$std[i+1]
-  arith_yearly10$sharpe2[i+1] = (sum(y10_sharpe2[,i+2])/1045)/arith_yearly10$std[i+1]
-  arith_yearly10$sharpe3[i+1] = (sum(y10_sharpe3[,i+2])/1045)/arith_yearly10$std[i+1]
-  arith_yearly10$sharpe4[i+1] = (sum(y10_sharpe1[,i+2])/1045)/sqrt(var(y10_sharpe1[,i+2]))
-  arith_yearly10$sharpe5[i+1] = (sum(y10_sharpe2[,i+2])/1045)/sqrt(var(y10_sharpe2[,i+2]))
-  arith_yearly10$sharpe6[i+1] = (sum(y10_sharpe3[,i+2])/1045)/sqrt(var(y10_sharpe3[,i+2]))
-  geom_yearly10$mean[i+1] = prod(Yearly_Data10_plus[,i+4])^(1/1045)-1
-  geom_yearly10$std[i+1] = sqrt(var(Yearly_Data10_plus[,i+4]))
-  geom_yearly10$rrr[i+1] = (prod(Yearly_Data10_plus[,i+4])^(1/1045)-1)/sqrt(var(Yearly_Data10_plus[,i+4]))
-  geom_yearly10$sharpe1[i+1] = (prod(y10_sharpe1g[,i+2])^(1/1045)-1)/geom_yearly10$std[i+1]
-  geom_yearly10$sharpe2[i+1] = (prod(y10_sharpe2g[,i+2])^(1/1045)-1)/geom_yearly10$std[i+1]
-  geom_yearly10$sharpe3[i+1] = (prod(y10_sharpe3g[,i+2])^(1/1045)-1)/geom_yearly10$std[i+1]
-  geom_yearly10$sharpe3[i+1] = (prod(y10_sharpe3g[,i+2])^(1/1045)-1)/geom_yearly10$std[i+1]
-  geom_yearly10$sharpe4[i+1] = (prod(y10_sharpe1g[,i+2])^(1/1045)-1)/sqrt(var(y10_sharpe1g[,i+2]))
-  geom_yearly10$sharpe5[i+1] = (prod(y10_sharpe2g[,i+2])^(1/1045)-1)/sqrt(var(y10_sharpe2g[,i+2]))
-  geom_yearly10$sharpe6[i+1] = (prod(y10_sharpe3g[,i+2])^(1/1045)-1)/sqrt(var(y10_sharpe3g[,i+2]))}
-
-arith_yearly10$Allocation = factor(arith_yearly10$Allocation, levels = c(arith_yearly10$Allocation))
-geom_yearly10$Allocation = factor(geom_yearly10$Allocation, levels = c(geom_yearly10$Allocation))
-
-write.csv(arith_yearly10, "arith_yearly10.csv", col.names=colnames(arith_yearly10), row.names = FALSE, quote=TRUE)
-# arith_yearly10 = read.csv("arith_yearly10.csv")
-write.csv(geom_yearly10, "geom_yearly10.csv", col.names=colnames(geom_yearly10), row.names = FALSE, quote=TRUE)
-# geom_yearly10 = read.csv("geom_yearly10.csv")
+  Data10_sharpe1 = y10_sharpe1[,c(1,i+2)]
+  Data10_sharpe1 = Data10_sharpe1 %>%
+    mutate("Geom1_120" = (1 + Data10_sharpe1[,2])^(1/120))
+  y10_sharpe1g[,i+2] = Data10_sharpe1$Geom1_120[[1]]}
 
 
+for(i in 0:100){
+  Data10_sharpe2 = y10_sharpe2[,c(1,i+2)]
+  Data10_sharpe2 = Data10_sharpe2 %>%
+    mutate("Geom1_120" = (1 + Data10_sharpe2[,2])^(1/120))
+  y10_sharpe2g[,i+2] = Data10_sharpe2$Geom1_120[[1]]}
 
-# Yearly 20 averages
+# Yearly averages, sharpes, and rrr
+arith_Yearly10 = data.frame(matrix(ncol=10, nrow = 101))
+colnames(arith_Yearly10) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "type")
+arith_Yearly10$Allocation = vect0
+arith_Yearly10$type = "120 Months"
+arith_Yearly10$Num = c(seq(0,100,1))
+geom_Yearly10 = arith_Yearly10
+
+for(i in 0:100){
+  arith_Yearly10$mean[i+1] = sum(Yearly_Data10[,i+4])/1045
+  arith_Yearly10$std[i+1] = sqrt(var(Yearly_Data10[,i+4]))
+  arith_Yearly10$rrr[i+1] = (sum(Yearly_Data10[,i+4])/1045)/sqrt(var(Yearly_Data10[,i+4]))
+  arith_Yearly10$sharpe1[i+1] = (sum(y10_sharpe1[,i+2])/1045)/arith_Yearly10$std[i+1]
+  arith_Yearly10$sharpe2[i+1] = (sum(y10_sharpe2[,i+2])/1045)/arith_Yearly10$std[i+1]
+  arith_Yearly10$sharpe3[i+1] = (sum(y10_sharpe1[,i+2])/1045)/sqrt(var(y10_sharpe1[,i+2]))
+  arith_Yearly10$sharpe4[i+1] = (sum(y10_sharpe2[,i+2])/1045)/sqrt(var(y10_sharpe2[,i+2]))
+  geom_Yearly10$mean[i+1] = prod(Yearly_Data10_120[,i+4])^(120/1045)-1
+  geom_Yearly10$std[i+1] = sqrt(var(Yearly_Data10_plus[,i+4]))
+  geom_Yearly10$rrr[i+1] = (prod(Yearly_Data10_120[,i+4])^(120/1045)-1)/sqrt(var(Yearly_Data10_plus[,i+4]))
+  geom_Yearly10$sharpe1[i+1] = (prod(y10_sharpe1g[,i+2])^(120/1045)-1)/geom_Yearly10$std[i+1]
+  geom_Yearly10$sharpe2[i+1] = (prod(y10_sharpe2g[,i+2])^(120/1045)-1)/geom_Yearly10$std[i+1]
+  geom_Yearly10$sharpe3[i+1] = (prod(y10_sharpe1g[,i+2])^(120/1045)-1)/std_10$Sharpe1[i+1]
+  geom_Yearly10$sharpe4[i+1] = (prod(y10_sharpe2g[,i+2])^(120/1045)-1)/std_10$Sharpe2[i+1]}
+
+arith_Yearly10$Allocation = factor(arith_Yearly10$Allocation, levels = c(arith_Yearly10$Allocation))
+geom_Yearly10$Allocation = factor(geom_Yearly10$Allocation, levels = c(geom_Yearly10$Allocation))
+
+write.csv(arith_Yearly10, "arith_Yearly10.csv", col.names=colnames(arith_Yearly10), row.names = FALSE, quote=TRUE)
+# arith_Yearly10 = read.csv("arith_Yearly10.csv")
+write.csv(geom_Yearly10, "geom_Yearly10.csv", col.names=colnames(geom_Yearly10), row.names = FALSE, quote=TRUE)
+# geom_Yearly10 = read.csv("geom_Yearly10.csv")
+```
+
+# 240 Month Averages
+```{r}
+
 Yearly_Data20_plus = Yearly_Data20
 Yearly_Data20_plus[, 4:104] = 1 + Yearly_Data20[, 4:104]
+Yearly_Data20_240 = Yearly_Data20_plus
+Yearly_Data20_240[,4:104] = Yearly_Data20_240[,4:104]^(1/240)
 Yearly_IB20 = Yearly_IB20 %>%
   mutate("risk_free" = (1 + Yearly_IB20$t_bill) / (1 + Yearly_IB20$inflation) - 1)
 Yearly_IB20_plus = Yearly_IB20
@@ -320,63 +331,79 @@ Yearly_IB20_plus[,2:4] = 1 + Yearly_IB20_plus[,2:4]
 y20_sharpe1 = Yearly_Data20[,c(1,4:104)]
 y20_sharpe1[,2:102] = NA
 y20_sharpe2 = y20_sharpe1
-y20_sharpe3 = y20_sharpe1
+std_20 = data.frame(matrix(ncol=4, nrow=101))
+colnames(std_20) = c("Allocation", "Sharpe1", "Sharpe2", "Sharpe3")
+std_20$Allocation = vect0
+sharpe_choice20 = std_20
 
 for(i in 0:100){
-  for(j in 1:925){
-    y20_sharpe1[j,i+2] = Yearly_Data20[j,i+4] - Yearly_IB20$risk_free[j]
-    y20_sharpe2[j,i+2] = Yearly_Data20[j,i+4] - Yearly_IB20$t_bill[j] - Yearly_IB20$inflation[j]
-    y20_sharpe3[j,i+2] = Yearly_Data20[j,i+4] - Yearly_IB20$t_bill[j]}}
+  Data = cbind(Yearly_Data20[,1], Yearly_IB20[,2:4], Yearly_Data20[,i+4])
+  Data = Data %>%
+    mutate("sharpe1" = Data[,5] - Data$risk_free) %>%
+    mutate("sharpe2" = Data[,5] - Data$t_bill + Data$inflation)
+  y20_sharpe1[,i+2] = Data$sharpe1
+  std_20$Sharpe1[i+1] = sqrt(var(Data$sharpe1))
+  y20_sharpe2[,i+2] = Data$sharpe2
+  std_20$Sharpe2[i+1] = sqrt(var(Data$sharpe2))}
 
 y20_sharpe1g = y20_sharpe1
-y20_sharpe1g[,2:102] = 1 + y20_sharpe1g[,2:102]
-y20_sharpe2g = y20_sharpe2
-y20_sharpe2g[,2:102] = 1 + y20_sharpe2g[,2:102]
-y20_sharpe3g = m_sharpe3
-y20_sharpe3g[,2:102] = 1 + y20_sharpe3g[,2:102]
+y20_sharpe1g[,2:102] = NA
+y20_sharpe2g = y20_sharpe1g
+
+for(i in 0:100){
+  Data20_sharpe1 = y20_sharpe1[,c(1,i+2)]
+  Data20_sharpe1 = Data20_sharpe1 %>%
+    mutate("Geom1_240" = (1 + Data20_sharpe1[,2])^(1/240))
+  y20_sharpe1g[,i+2] = Data20_sharpe1$Geom1_240[[1]]}
+
+for(i in 0:100){
+  Data20_sharpe2 = y20_sharpe2[,c(1,i+2)]
+  Data20_sharpe2 = Data20_sharpe2 %>%
+    mutate("Geom1_240" = (1 + Data20_sharpe2[,2])^(1/240))
+  y20_sharpe2g[,i+2] = Data20_sharpe2$Geom1_240[[1]]}
 
 
 # Yearly averages, sharpes, and rrr
-arith_yearly20 = data.frame(matrix(ncol=12, nrow = 101))
-colnames(arith_yearly20) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
-arith_yearly20$Allocation = vect0
-arith_yearly20$type = "240 Months"
-arith_yearly20$Num = c(seq(0,100,1))
-geom_yearly20 = arith_yearly20
+arith_Yearly20 = data.frame(matrix(ncol=10, nrow = 101))
+colnames(arith_Yearly20) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "type")
+arith_Yearly20$Allocation = vect0
+arith_Yearly20$type = "240 Months"
+arith_Yearly20$Num = c(seq(0,100,1))
+geom_Yearly20 = arith_Yearly20
 
 for(i in 0:100){
-  arith_yearly20$mean[i+1] = sum(Yearly_Data20[,i+4])/925
-  arith_yearly20$std[i+1] = sqrt(var(Yearly_Data20[,i+4]))
-  arith_yearly20$rrr[i+1] = (sum(Yearly_Data20[,i+4])/925)/sqrt(var(Yearly_Data20[,i+4]))
-  arith_yearly20$sharpe1[i+1] = (sum(y20_sharpe1[,i+2])/925)/arith_yearly20$std[i+1]
-  arith_yearly20$sharpe2[i+1] = (sum(y20_sharpe2[,i+2])/925)/arith_yearly20$std[i+1]
-  arith_yearly20$sharpe3[i+1] = (sum(y20_sharpe3[,i+2])/925)/arith_yearly20$std[i+1]
-  arith_yearly20$sharpe4[i+1] = (sum(y20_sharpe1[,i+2])/925)/sqrt(var(y20_sharpe1[,i+2]))
-  arith_yearly20$sharpe5[i+1] = (sum(y20_sharpe2[,i+2])/925)/sqrt(var(y20_sharpe2[,i+2]))
-  arith_yearly20$sharpe6[i+1] = (sum(y20_sharpe3[,i+2])/925)/sqrt(var(y20_sharpe3[,i+2]))
-  geom_yearly20$mean[i+1] = prod(Yearly_Data20_plus[,i+4])^(1/925)-1
-  geom_yearly20$std[i+1] = sqrt(var(Yearly_Data20_plus[,i+4]))
-  geom_yearly20$rrr[i+1] = (prod(Yearly_Data20_plus[,i+4])^(1/925)-1)/sqrt(var(Yearly_Data20_plus[,i+4]))
-  geom_yearly20$sharpe1[i+1] = (prod(y20_sharpe1g[,i+2])^(1/925)-1)/geom_yearly20$std[i+1]
-  geom_yearly20$sharpe2[i+1] = (prod(y20_sharpe2g[,i+2])^(1/925)-1)/geom_yearly20$std[i+1]
-  geom_yearly20$sharpe3[i+1] = (prod(y20_sharpe3g[,i+2])^(1/925)-1)/geom_yearly10$std[i+1]
-  geom_yearly20$sharpe4[i+1] = (prod(y20_sharpe1g[,i+2])^(1/925)-1)/sqrt(var(y20_sharpe1g[,i+2]))
-  geom_yearly20$sharpe5[i+1] = (prod(y20_sharpe2g[,i+2])^(1/925)-1)/sqrt(var(y20_sharpe2g[,i+2]))
-  geom_yearly20$sharpe6[i+1] = (prod(y20_sharpe3g[,i+2])^(1/925)-1)/sqrt(var(y20_sharpe3g[,i+2]))}
+  arith_Yearly20$mean[i+1] = sum(Yearly_Data20[,i+4])/925
+  arith_Yearly20$std[i+1] = sqrt(var(Yearly_Data20[,i+4]))
+  arith_Yearly20$rrr[i+1] = (sum(Yearly_Data20[,i+4])/925)/sqrt(var(Yearly_Data20[,i+4]))
+  arith_Yearly20$sharpe1[i+1] = (sum(y20_sharpe1[,i+2])/925)/arith_Yearly20$std[i+1]
+  arith_Yearly20$sharpe2[i+1] = (sum(y20_sharpe2[,i+2])/925)/arith_Yearly20$std[i+1]
+  arith_Yearly20$sharpe3[i+1] = (sum(y20_sharpe1[,i+2])/925)/sqrt(var(y20_sharpe1[,i+2]))
+  arith_Yearly20$sharpe4[i+1] = (sum(y20_sharpe2[,i+2])/925)/sqrt(var(y20_sharpe2[,i+2]))
+  geom_Yearly20$mean[i+1] = prod(Yearly_Data20_240[,i+4])^(240/925)-1
+  geom_Yearly20$std[i+1] = sqrt(var(Yearly_Data20_plus[,i+4]))
+  geom_Yearly20$rrr[i+1] = (prod(Yearly_Data20_240[,i+4])^(240/925)-1)/sqrt(var(Yearly_Data20_plus[,i+4]))
+  geom_Yearly20$sharpe1[i+1] = (prod(y20_sharpe1g[,i+2])^(240/925)-1)/geom_Yearly20$std[i+1]
+  geom_Yearly20$sharpe2[i+1] = (prod(y20_sharpe2g[,i+2])^(240/925)-1)/geom_Yearly20$std[i+1]
+  geom_Yearly20$sharpe3[i+1] = (prod(y20_sharpe1g[,i+2])^(240/925)-1)/std_20$Sharpe1[i+1]
+  geom_Yearly20$sharpe4[i+1] = (prod(y20_sharpe2g[,i+2])^(240/925)-1)/std_20$Sharpe2[i+1]}
 
-arith_yearly20$Allocation = factor(arith_yearly20$Allocation, levels = c(arith_yearly20$Allocation))
-geom_yearly20$Allocation = factor(geom_yearly20$Allocation, levels = c(geom_yearly20$Allocation))
+arith_Yearly20$Allocation = factor(arith_Yearly20$Allocation, levels = c(arith_Yearly20$Allocation))
+geom_Yearly20$Allocation = factor(geom_Yearly20$Allocation, levels = c(geom_Yearly20$Allocation))
 
-write.csv(arith_yearly20, "arith_yearly20.csv", col.names=colnames(arith_yearly20), row.names = FALSE, quote=TRUE)
-# arith_yearly20 = read.csv("arith_yearly20.csv")
-write.csv(geom_yearly20, "geom_yearly20.csv", col.names=colnames(geom_yearly20), row.names = FALSE, quote=TRUE)
-# geom_yearly20 = read.csv("geom_yearly20.csv")
+write.csv(arith_Yearly20, "arith_Yearly20.csv", col.names=colnames(arith_Yearly20), row.names = FALSE, quote=TRUE)
+# arith_Yearly20 = read.csv("arith_Yearly20.csv")
+write.csv(geom_Yearly20, "geom_Yearly20.csv", col.names=colnames(geom_Yearly20), row.names = FALSE, quote=TRUE)
+# geom_Yearly20 = read.csv("geom_Yearly20.csv")
+```
 
 
+# 360 Month Averages
+```{r}
 
-# Yearly 30 averages
 Yearly_Data30_plus = Yearly_Data30
 Yearly_Data30_plus[, 4:104] = 1 + Yearly_Data30[, 4:104]
+Yearly_Data30_360 = Yearly_Data30_plus
+Yearly_Data30_360[,4:104] = Yearly_Data30_360[,4:104]^(1/360)
 Yearly_IB30 = Yearly_IB30 %>%
   mutate("risk_free" = (1 + Yearly_IB30$t_bill) / (1 + Yearly_IB30$inflation) - 1)
 Yearly_IB30_plus = Yearly_IB30
@@ -384,204 +411,644 @@ Yearly_IB30_plus[,2:4] = 1 + Yearly_IB30_plus[,2:4]
 y30_sharpe1 = Yearly_Data30[,c(1,4:104)]
 y30_sharpe1[,2:102] = NA
 y30_sharpe2 = y30_sharpe1
-y30_sharpe3 = y30_sharpe1
+std_30 = data.frame(matrix(ncol=4, nrow=101))
+colnames(std_30) = c("Allocation", "Sharpe1", "Sharpe2", "Sharpe3")
+std_30$Allocation = vect0
+sharpe_choice30 = std_30
 
 for(i in 0:100){
-  for(j in 1:805){
-    y30_sharpe1[j,i+2] = Yearly_Data30[j,i+4] - Yearly_IB30$risk_free[j]
-    y30_sharpe2[j,i+2] = Yearly_Data30[j,i+4] - Yearly_IB30$t_bill[j] - Yearly_IB30$inflation[j]
-    y30_sharpe3[j,i+2] = Yearly_Data30[j,i+4] - Yearly_IB30$t_bill[j]}}
+  Data = cbind(Yearly_Data30[,1], Yearly_IB30[,2:4], Yearly_Data30[,i+4])
+  Data = Data %>%
+    mutate("sharpe1" = Data[,5] - Data$risk_free) %>%
+    mutate("sharpe2" = Data[,5] - Data$t_bill + Data$inflation)
+  y30_sharpe1[,i+2] = Data$sharpe1
+  std_30$Sharpe1[i+1] = sqrt(var(Data$sharpe1))
+  y30_sharpe2[,i+2] = Data$sharpe2
+  std_30$Sharpe2[i+1] = sqrt(var(Data$sharpe2))}
 
 y30_sharpe1g = y30_sharpe1
-y30_sharpe1g[,2:102] = 1 + y30_sharpe1g[,2:102]
-y30_sharpe2g = y30_sharpe2
-y30_sharpe2g[,2:102] = 1 + y30_sharpe2g[,2:102]
-y30_sharpe3g = m_sharpe3
-y30_sharpe3g[,2:102] = 1 + y30_sharpe3g[,2:102]
-
-
-# Yearly averages, sharpes, and rrr
-arith_yearly30 = data.frame(matrix(ncol=12, nrow = 101))
-colnames(arith_yearly30) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "sharpe5", "sharpe6", "type")
-arith_yearly30$Allocation = vect0
-arith_yearly30$type = "360 Months"
-arith_yearly30$Num = c(seq(0,100,1))
-geom_yearly30 = arith_yearly30
+y30_sharpe1g[,2:102] = NA
+y30_sharpe2g = y30_sharpe1g
 
 for(i in 0:100){
-  arith_yearly30$mean[i+1] = sum(Yearly_Data30[,i+4])/805
-  arith_yearly30$std[i+1] = sqrt(var(Yearly_Data30[,i+4]))
-  arith_yearly30$rrr[i+1] = (sum(Yearly_Data30[,i+4])/805)/sqrt(var(Yearly_Data30[,i+4]))
-  arith_yearly30$sharpe1[i+1] = (sum(y30_sharpe1[,i+2])/805)/arith_yearly30$std[i+1]
-  arith_yearly30$sharpe2[i+1] = (sum(y30_sharpe2[,i+2])/805)/arith_yearly30$std[i+1]
-  arith_yearly30$sharpe3[i+1] = (sum(y30_sharpe3[,i+2])/805)/arith_yearly30$std[i+1]
-  arith_yearly30$sharpe4[i+1] = (sum(y30_sharpe1[,i+2])/805)/sqrt(var(y30_sharpe1[,i+2]))
-  arith_yearly30$sharpe5[i+1] = (sum(y30_sharpe2[,i+2])/805)/sqrt(var(y30_sharpe2[,i+2]))
-  arith_yearly30$sharpe6[i+1] = (sum(y30_sharpe3[,i+2])/805)/sqrt(var(y30_sharpe3[,i+2]))
-  geom_yearly30$mean[i+1] = prod(Yearly_Data30_plus[,i+4])^(1/805)-1
-  geom_yearly30$std[i+1] = sqrt(var(Yearly_Data30_plus[,i+4]))
-  geom_yearly30$rrr[i+1] = (prod(Yearly_Data30_plus[,i+4])^(1/805)-1)/sqrt(var(Yearly_Data30_plus[,i+4]))
-  geom_yearly30$sharpe1[i+1] = (prod(y30_sharpe1g[,i+2])^(1/805)-1)/geom_yearly30$std[i+1]
-  geom_yearly30$sharpe2[i+1] = (prod(y30_sharpe2g[,i+2])^(1/805)-1)/geom_yearly30$std[i+1]
-  geom_yearly30$sharpe3[i+1] = (prod(y30_sharpe3g[,i+2])^(1/805)-1)/geom_yearly30$std[i+1]
-  geom_yearly30$sharpe4[i+1] = (prod(y30_sharpe1g[,i+2])^(1/805)-1)/sqrt(var(y30_sharpe1g[,i+2]))
-  geom_yearly30$sharpe5[i+1] = (prod(y30_sharpe2g[,i+2])^(1/805)-1)/sqrt(var(y30_sharpe2g[,i+2]))
-  geom_yearly30$sharpe6[i+1] = (prod(y30_sharpe3g[,i+2])^(1/805)-1)/sqrt(var(y30_sharpe3g[,i+2]))}
+  Data30_sharpe1 = y30_sharpe1[,c(1,i+2)]
+  Data30_sharpe1 = Data30_sharpe1 %>%
+    mutate("Geom1_360" = (1 + Data30_sharpe1[,2])^(1/360))
+  y30_sharpe1g[,i+2] = Data30_sharpe1$Geom1_360[[1]]}
 
-arith_yearly30$Allocation = factor(arith_yearly30$Allocation, levels = c(arith_yearly30$Allocation))
-geom_yearly30$Allocation = factor(geom_yearly30$Allocation, levels = c(geom_yearly30$Allocation))
+for(i in 0:100){
+  Data30_sharpe2 = y30_sharpe2[,c(1,i+2)]
+  Data30_sharpe2 = Data30_sharpe2 %>%
+    mutate("Geom1_360" = (1 + Data30_sharpe2[,2])^(1/360))
+  y30_sharpe2g[,i+2] = Data30_sharpe2$Geom1_360[[1]]}
 
-write.csv(arith_yearly30, "arith_yearly30.csv", col.names=colnames(arith_yearly30), row.names = FALSE, quote=TRUE)
-# arith_yearly30 = read.csv("arith_yearly30.csv")
-write.csv(geom_yearly30, "geom_yearly30.csv", col.names=colnames(geom_yearly30), row.names = FALSE, quote=TRUE)
-# geom_yearly30 = read.csv("geom_yearly30.csv")
+# Yearly averages, sharpes, and rrr
+arith_Yearly30 = data.frame(matrix(ncol=10, nrow = 101))
+colnames(arith_Yearly30) = c("Allocation", "Num", "mean", "std", "rrr", "sharpe1", "sharpe2", "sharpe3", "sharpe4", "type")
+arith_Yearly30$Allocation = vect0
+arith_Yearly30$type = "360 Months"
+arith_Yearly30$Num = c(seq(0,100,1))
+geom_Yearly30 = arith_Yearly30
 
-arith = rbind(arith_monthly, arith_yearly, arith_yearly10, arith_yearly20, arith_yearly30)
-geom = rbind(geom_monthly, geom_yearly, geom_yearly10, geom_yearly20, geom_yearly30)
+for(i in 0:100){
+  arith_Yearly30$mean[i+1] = sum(Yearly_Data30[,i+4])/805
+  arith_Yearly30$std[i+1] = sqrt(var(Yearly_Data30[,i+4]))
+  arith_Yearly30$rrr[i+1] = (sum(Yearly_Data30[,i+4])/805)/sqrt(var(Yearly_Data30[,i+4]))
+  arith_Yearly30$sharpe1[i+1] = (sum(y30_sharpe1[,i+2])/805)/arith_Yearly30$std[i+1]
+  arith_Yearly30$sharpe2[i+1] = (sum(y30_sharpe2[,i+2])/805)/arith_Yearly30$std[i+1]
+  arith_Yearly30$sharpe3[i+1] = (sum(y30_sharpe1[,i+2])/805)/sqrt(var(y30_sharpe1[,i+2]))
+  arith_Yearly30$sharpe4[i+1] = (sum(y30_sharpe2[,i+2])/805)/sqrt(var(y30_sharpe2[,i+2]))
+  geom_Yearly30$mean[i+1] = prod(Yearly_Data30_360[,i+4])^(360/805)-1
+  geom_Yearly30$std[i+1] = sqrt(var(Yearly_Data30_plus[,i+4]))
+  geom_Yearly30$rrr[i+1] = (prod(Yearly_Data30_360[,i+4])^(360/805)-1)/sqrt(var(Yearly_Data30_plus[,i+4]))
+  geom_Yearly30$sharpe1[i+1] = (prod(y30_sharpe1g[,i+2])^(360/805)-1)/geom_Yearly30$std[i+1]
+  geom_Yearly30$sharpe2[i+1] = (prod(y30_sharpe2g[,i+2])^(360/805)-1)/geom_Yearly30$std[i+1]
+  geom_Yearly30$sharpe3[i+1] = (prod(y30_sharpe1g[,i+2])^(360/805)-1)/std_30$Sharpe1[i+1]
+  geom_Yearly30$sharpe4[i+1] = (prod(y30_sharpe2g[,i+2])^(360/805)-1)/std_30$Sharpe2[i+1]}
+
+arith_Yearly30$Allocation = factor(arith_Yearly30$Allocation, levels = c(arith_Yearly30$Allocation))
+geom_Yearly30$Allocation = factor(geom_Yearly30$Allocation, levels = c(geom_Yearly30$Allocation))
+
+write.csv(arith_Yearly30, "arith_Yearly30.csv", col.names=colnames(arith_Yearly30), row.names = FALSE, quote=TRUE)
+# arith_Yearly30 = read.csv("arith_Yearly30.csv")
+write.csv(geom_Yearly30, "geom_Yearly30.csv", col.names=colnames(geom_Yearly30), row.names = FALSE, quote=TRUE)
+# geom_Yearly30 = read.csv("geom_Yearly30.csv")
+```
+
+```{r}
+
+arith = rbind(arith_monthly, arith_Yearly, arith_Yearly10, arith_Yearly20, arith_Yearly30)
+geom = rbind(geom_monthly, geom_Yearly, geom_Yearly10, geom_Yearly20, geom_Yearly30)
+
+write.csv(arith, "arith.csv", col.names=colnames(arith), row.names = FALSE, quote=TRUE)
+# arith = read.csv("arith.csv")
+write.csv(geom, "geom.csv", col.names=colnames(geom), row.names = FALSE, quote=TRUE)
+# geom = read.csv("geom.csv")
 
 
-for(h in 1:10){
-  for(i in 4:11){
-    if(h==1){
-      frame = arith_monthly}
-    if(h==2){
-      frame = geom_monthly}
-    if(h==3){
-      frame = arith_yearly}
-    if(h==4){
-      frame = geom_yearly}
-    if(h==5){
-      frame = arith_yearly10}
-    if(h==6){
-      frame = geom_yearly10}
-    if(h==7){
-      frame = arith_yearly20}
-    if(h==8){
-      frame = geom_yearly20}
-    if(h==9){
-      frame = arith_yearly30}
-    if(h==10){
-      frame = geom_yearly30}
-    if(i == 4){
-      frame = frame[,  c(1,2,i,i-1,12)]}
-    if(i != 4){
-      frame = frame[,  c(1,2,i,12)]}
-    min = min(frame[,3])
-    max = max(frame[,3])
-    vect = vector()
-    vect = append(vect, c(1,61,101))
-    for(j in 1:101){
-      if(i == 4){
-        if(frame[j, 3] == min){
-          vect = append(vect, frame$Num[j])}}
+for(i in 1:5){
+  if(i==1){
+    x = arith_monthly
+    x = x %>%
+      mutate("Method" = "Arithmetic")
+    y = geom_monthly
+    y = y %>%
+      mutate("Method" = "Geometric")
+    frame = rbind(x,y)
+    name = "Monthly"}
+  if(i==2){
+    x = arith_Yearly
+    x = x %>%
+      mutate("Method" = "Arithmetic")
+    y = geom_Yearly
+    y = y %>%
+      mutate("Method" = "Geometric")
+    frame = rbind(x,y)
+    name = "Yearly"}
+  if(i==3){
+    x = arith_Yearly10
+    x = x %>%
+      mutate("Method" = "Arithmetic")
+    y = geom_Yearly10
+    y = y %>%
+      mutate("Method" = "Geometric")
+    frame = rbind(x,y)  
+    name = "Yearly_10"}
+  if(i==4){
+    x = arith_Yearly20
+    x = x %>%
+      mutate("Method" = "Arithmetic")
+    y = geom_Yearly20
+    y = y %>%
+      mutate("Method" = "Geometric")
+    frame = rbind(x,y)
+    name = "Yearly_20"}
+  if(i==5){
+    x = arith_Yearly30
+    x = x %>%
+      mutate("Method" = "Arithmetic")
+    y = geom_Yearly30
+    y = y %>%
+      mutate("Method" = "Geometric")
+    frame = rbind(x,y)
+    name = "Yearly_30"}
+  stats = frame[,c(1:4,11)]
+  min1 = min(stats$std[1:101])
+  max1 = max(stats$std[1:101])
+  min2 = min(stats$std[102:202])
+  max2 = max(stats$std[102:202])
+  vect0 = vector()
+  vect0 = append(vect0, c(1,61,101))
+  for(j in 1:101){
+    if(stats$std[[j]] == min1 | stats$std[[j]] == max1){
+      vect0 = append(vect0, j)}}
+  vect0 = unique(vect0)
+  vect0 = sort(vect0)
+  vect1 = vector()
+  vect1 = append(vect1, c(102,162,202))
+  for(j in 102:202){
+    if(stats$std[[j]] == min2| stats$std[[j]] == max2){
+      vect1 = append(vect1, j)}}
+  vect1 = unique(vect1)
+  vect1 = sort(vect1)
+  vect_sig = vector()
+  vect_sig = append(vect_sig, c(vect0,vect1))
+  sig_stat1 = stats[c(vect0),]
+  sig_stat2 = stats[c(vect1),]
+  sig_stat = stats[-c(vect_sig),]
+  sig_stat <- sig_stat %>%
+    mutate("Rank_std" = NA)
+  sig_stat1 <- sig_stat1 %>%
+    mutate("Rank_std" = rank(sig_stat1$std))
+  sig_stat2 <- sig_stat2 %>%
+    mutate("Rank_std" = rank(sig_stat2[,4]))
+  sig_stat12 = rbind(sig_stat1, sig_stat2)
+  stats = rbind(sig_stat, sig_stat1, sig_stat2)
+  stats_A = subset(stats, stats$Method == "Arithmetic")
+  stats_G = subset(stats, stats$Method == "Geometric")
+  stats_A_num = order(stats_A$Num)
+  stats_G_num = order(stats_G$Num)
+  stats_A = stats_A[c(stats_A_num),]
+  stats_G = stats_G[c(stats_G_num),]
+  stats = rbind(stats_A, stats_G)
+  stats["Rank_color_std"] = NA
+  for(j in 1:202){
+    if(is.na(stats$Rank_std[j])){
+      stats$Rank_color_std[j] = "black"}
+    else{
+      if(stats$Rank_std[j] == 1){
+        stats$Rank_color_std[j] = "green"}
       else{
-        if(i != 4){
-          if(frame[j, 3] == max){
-            vect = append(vect, frame$Num[j])}}}}
-    vect = unique(vect)
-    vect = sort(vect)
-    signif_pts = frame[c(vect),]
-    if(i == 4){
-      signif_pts <- signif_pts %>%
-        mutate("Rank" = rank(signif_pts[,3]))}
-    if(i != 4){
-      signif_pts <- signif_pts %>%
-        mutate("Rank" = 5 - rank(signif_pts[,3]))}
-    signif_pts["Rank_Color"] = NA
-    vect_col = vector()
-    for(k in 1:4){
-      if(as.integer(signif_pts$Rank[k]) == 1){
-        vect_col = append(vect_col, "green")}
-      else{
-        if(as.integer(signif_pts$Rank[k]) == 2){
-          vect_col = append(vect_col, "yellow")}
+        if(stats$Rank_std[j] == 2){
+          stats$Rank_color_std[j] = "yellow"}
         else{
-          if(as.integer(signif_pts$Rank[k]) == 3){
-            vect_col = append(vect_col, "orange")}
+          if(stats$Rank_std[j] == 3){
+            stats$Rank_color_std[j] = "orange"}
           else{
-            if(as.integer(signif_pts$Rank[k]) == 4){
-              vect_col = append(vect_col, "red")}}}}}
-    signif_pts$Rank_Color = vect_col
-    if(h%%2==1){
-      type = "arith"}
-    if(h%%2==0){
-      type = "geom"}
-    if(h==1 | h==2){
-      name = "monthly"}
-    if(h==3 | h==4){
-      name = "yearly"}
-    if(h==5 | h==6){
-      name = "yearly10"}
-    if(h==7 | h==8){
-      name = "yearly20"}
-    if(h==9 | h==10){
-      name = "yearly30"}
-    assign(paste0("signif_", type, "_", name, "_", colnames(frame)[3]), signif_pts)}}
-
-
-signif_arith_std = rbind(signif_arith_monthly_std, signif_arith_yearly_std, signif_arith_yearly10_std, 
-                         signif_arith_yearly20_std, signif_arith_yearly30_std)
-signif_arith_std$type = factor(signif_arith_std$type, levels = c(signif_arith_std$type))
-
-signif_arith_rrr= rbind(signif_arith_monthly_rrr, signif_arith_yearly_rrr, signif_arith_yearly10_rrr, 
-                        signif_arith_yearly20_rrr, signif_arith_yearly30_rrr)
-signif_arith_rrr$type = factor(signif_arith_rrr$type, levels = c(signif_arith_rrr$type))
-
-signif_arith_sharpe1= rbind(signif_arith_monthly_sharpe1, signif_arith_yearly_sharpe1, signif_arith_yearly10_sharpe1, 
-                            signif_arith_yearly20_sharpe1, signif_arith_yearly30_sharpe1)
-signif_arith_sharpe1$type = factor(signif_arith_sharpe1$type, levels = c(signif_arith_sharpe1$type))
-
-signif_arith_sharpe2= rbind(signif_arith_monthly_sharpe2, signif_arith_yearly_sharpe2, signif_arith_yearly10_sharpe2, 
-                            signif_arith_yearly20_sharpe2, signif_arith_yearly30_sharpe2)
-signif_arith_sharpe2$type = factor(signif_arith_sharpe2$type, levels = c(signif_arith_sharpe2$type))
-
-signif_arith_sharpe3= rbind(signif_arith_monthly_sharpe3, signif_arith_yearly_sharpe3, signif_arith_yearly10_sharpe3, 
-                            signif_arith_yearly20_sharpe3, signif_arith_yearly30_sharpe3)
-signif_arith_sharpe3$type = factor(signif_arith_sharpe3$type, levels = c(signif_arith_sharpe3$type))
-
-signif_arith_sharpe4= rbind(signif_arith_monthly_sharpe4, signif_arith_yearly_sharpe4, signif_arith_yearly10_sharpe4, 
-                            signif_arith_yearly20_sharpe4, signif_arith_yearly30_sharpe4)
-signif_arith_sharpe4$type = factor(signif_arith_sharpe4$type, levels = c(signif_arith_sharpe4$type))
-
-signif_arith_sharpe5= rbind(signif_arith_monthly_sharpe5, signif_arith_yearly_sharpe5, signif_arith_yearly10_sharpe5, 
-                            signif_arith_yearly20_sharpe5, signif_arith_yearly30_sharpe5)
-signif_arith_sharpe5$type = factor(signif_arith_sharpe5$type, levels = c(signif_arith_sharpe5$type))
-
-signif_arith_sharpe6= rbind(signif_arith_monthly_sharpe6, signif_arith_yearly_sharpe6, signif_arith_yearly10_sharpe6, 
-                            signif_arith_yearly20_sharpe6, signif_arith_yearly30_sharpe6)
-signif_arith_sharpe6$type = factor(signif_arith_sharpe6$type, levels = c(signif_arith_sharpe6$type))
-
-signif_geom_std = rbind(signif_geom_monthly_std, signif_geom_yearly_std, signif_geom_yearly10_std, 
-                         signif_geom_yearly20_std, signif_geom_yearly30_std)
-signif_geom_std$type = factor(signif_geom_std$type, levels = c(signif_geom_std$type))
-
-signif_geom_rrr= rbind(signif_geom_monthly_rrr, signif_geom_yearly_rrr, signif_geom_yearly10_rrr, 
-                        signif_geom_yearly20_rrr, signif_geom_yearly30_rrr)
-signif_geom_rrr$type = factor(signif_geom_rrr$type, levels = c(signif_geom_rrr$type))
-
-signif_geom_sharpe1= rbind(signif_geom_monthly_sharpe1, signif_geom_yearly_sharpe1, signif_geom_yearly10_sharpe1, 
-                            signif_geom_yearly20_sharpe1, signif_geom_yearly30_sharpe1)
-signif_geom_sharpe1$type = factor(signif_geom_sharpe1$type, levels = c(signif_geom_sharpe1$type))
-
-signif_geom_sharpe2= rbind(signif_geom_monthly_sharpe2, signif_geom_yearly_sharpe2, signif_geom_yearly10_sharpe2, 
-                            signif_geom_yearly20_sharpe2, signif_geom_yearly30_sharpe2)
-signif_geom_sharpe2$type = factor(signif_geom_sharpe2$type, levels = c(signif_geom_sharpe2$type))
-
-signif_geom_sharpe3= rbind(signif_geom_monthly_sharpe3, signif_geom_yearly_sharpe3, signif_geom_yearly10_sharpe3, 
-                            signif_geom_yearly20_sharpe3, signif_geom_yearly30_sharpe3)
-signif_geom_sharpe3$type = factor(signif_geom_sharpe3$type, levels = c(signif_geom_sharpe3$type))
-
-signif_geom_sharpe4= rbind(signif_geom_monthly_sharpe4, signif_geom_yearly_sharpe4, signif_geom_yearly10_sharpe4, 
-                            signif_geom_yearly20_sharpe4, signif_geom_yearly30_sharpe4)
-signif_geom_sharpe4$type = factor(signif_geom_sharpe4$type, levels = c(signif_geom_sharpe4$type))
-
-signif_geom_sharpe5= rbind(signif_geom_monthly_sharpe5, signif_geom_yearly_sharpe5, signif_geom_yearly10_sharpe5, 
-                            signif_geom_yearly20_sharpe5, signif_geom_yearly30_sharpe5)
-signif_geom_sharpe5$type = factor(signif_geom_sharpe5$type, levels = c(signif_geom_sharpe5$type))
-
-signif_geom_sharpe6= rbind(signif_geom_monthly_sharpe6, signif_geom_yearly_sharpe6, signif_geom_yearly10_sharpe6, 
-                            signif_geom_yearly20_sharpe6, signif_geom_yearly30_sharpe6)
-signif_geom_sharpe6$type = factor(signif_geom_sharpe6$type, levels = c(signif_geom_sharpe6$type))
+            if(stats$Rank_std[j] == 4){
+              stats$Rank_color_std[j] = "red"}}}}}}
+  num = subset(stats[1:101,], stats$std[1:101] == min(stats$std[1:101]))$Num + 1
+  num2 = subset(stats[102:202,], stats$std[102:202] == min(stats$std[102:202]))$Num + 1
+  stats1 = stats[1:101,]
+  stats2 = stats[102:202,]
+  stats1= stats1%>%
+    mutate("Percent Change: Mean" = round(100*(stats1$mean-(stats1$mean[num]))/(stats1$mean[num]),4)) %>%
+    mutate("Percent Change: SD" = round(100*(stats1$std-(stats1$std[num]))/(stats1$std[num]),4))
+  stats1 = stats1%>%
+    mutate("Mean vs SD Percent Change" = round(stats1$`Percent Change: Mean`/stats1$`Percent Change: SD`,4)) %>%
+    mutate("Lower_CI" = stats1$mean - 1.96*stats1$std) %>%
+    mutate("Upper_CI" = stats1$mean + 1.96*stats1$std)
+  if(i == 1){
+    stats1$Rank_color_std[6:13] = "lightblue"}
+  if(i == 2){
+    stats1$Rank_color_std[8:17] = "lightblue"}
+  if(i == 3){
+    stats1$Rank_color_std[11:34] = "lightblue"}
+  if(i == 4){
+    stats1$Rank_color_std[4:35] = "lightblue"}
+  if(i == 5){
+    stats1$Rank_color_std[c(15:60, 62:66)] = "lightblue"}
+  stats1 = stats1 %>%
+    mutate("Signif" = stats1$Lower_CI[1:101] == max(stats1$Lower_CI)| stats1$Num[1:101] %in% c(0,60,100))
+  # for(j in 1:101){
+  #   if(frame$rrr[j] == max(frame$rrr[1:101])){
+  #     stats1$Signif[j] = TRUE}
+  #   if(frame$sharpe1[j] == max(frame$sharpe1[1:101])){
+  #     stats1$Signif[j] = TRUE}
+  #   if(frame$sharpe2[j] == max(frame$sharpe2[1:101])){
+  #     stats1$Signif[j] = TRUE}
+  #   if(frame$sharpe3[j] == max(frame$sharpe3[1:101])){
+  #     stats1$Signif[j] = TRUE}
+  #   if(frame$sharpe4[j] == max(frame$sharpe4[1:101])){
+  #     stats1$Signif[j] = TRUE}}
+  stats_signif1 = subset(stats1, stats1$Signif == TRUE)
+  stats_Not_signif1 = subset(stats1, stats1$Signif != TRUE)
+  stats_signif1 = stats_signif1 %>%
+    mutate("Rank_CI" = length(stats_signif1$Signif) + 1 - rank(stats_signif1$Lower_CI))
+  stats_Not_signif1 = stats_Not_signif1 %>%
+    mutate("Rank_CI" = NA)
+  stats1 = rbind(stats_Not_signif1, stats_signif1)
+  stats1_num = order(stats1$Num)
+  stats1 = stats1[c(stats1_num),]
+  stats1 = stats1 %>%
+    mutate("Rank_CI_color" = NA)
+  if(101 - sum(is.na(stats1$Rank_CI)) == 9){
+    for(j in 1:101){
+      if(is.na(stats1$Rank_CI[j]) == TRUE){
+        stats1$Rank_CI_color[j] = "black"}
+      else{
+        if(stats1$Rank_CI[j] == 1){
+          stats1$Rank_CI_color[j] = "blue"}
+        else{
+          if(stats1$Rank_CI[j] == 2){
+            stats1$Rank_CI_color[j] = "lightblue"}
+          else{
+            if(stats1$Rank_CI[j] == 3){
+              stats1$Rank_CI_color[j] = "aquamarine"}
+            else{
+              if(stats1$Rank_CI[j] == 4){
+                stats1$Rank_CI_color[j] = "lightgreen"}
+              else{
+                if(stats1$Rank_CI[j] == 5){
+                  stats1$Rank_CI_color[j] = "green"}
+                else{
+                  if(stats1$Rank_CI[j] == 6){
+                    stats1$Rank_CI_color[j] = "yellowgreen"}
+                  else{
+                    if(stats1$Rank_CI[j] == 7){
+                      stats1$Rank_CI_color[j] = "yellow"}
+                    else{
+                      if(stats1$Rank_CI[j] == 8){
+                        stats1$Rank_CI_color[j] = "orange"}
+                      else{
+                        if(stats1$Rank_CI[j] == 9){
+                          stats1$Rank_CI_color[j] = "red"}}}}}}}}}}}}
+  if(101 - sum(is.na(stats1$Rank_CI)) == 8){
+    for(j in 1:101){
+      if(is.na(stats1$Rank_CI[j]) == TRUE){
+        stats1$Rank_CI_color[j] = "black"}
+      else{
+        if(stats1$Rank_CI[j] == 1){
+          stats1$Rank_CI_color[j] = "blue"}
+        else{
+          if(stats1$Rank_CI[j] == 2){
+            stats1$Rank_CI_color[j] = "lightblue"}
+          else{
+            if(stats1$Rank_CI[j] == 3){
+              stats1$Rank_CI_color[j] = "lightgreen"}
+            else{
+              if(stats1$Rank_CI[j] == 4){
+                stats1$Rank_CI_color[j] = "green"}
+              else{
+                if(stats1$Rank_CI[j] == 5){
+                  stats1$Rank_CI_color[j] = "yellowgreen"}
+                else{
+                  if(stats1$Rank_CI[j] == 6){
+                    stats1$Rank_CI_color[j] = "yellow"}
+                  else{
+                    if(stats1$Rank_CI[j] == 7){
+                      stats1$Rank_CI_color[j] = "orange"}
+                    else{
+                      if(stats1$Rank_CI[j] == 8){
+                        stats1$Rank_CI_color[j] = "red"}}}}}}}}}}}
+  if(101 - sum(is.na(stats1$Rank_CI)) == 7){
+    for(j in 1:101){
+      if(is.na(stats1$Rank_CI[j]) == TRUE){
+        stats1$Rank_CI_color[j] = "black"}
+      else{
+        if(stats1$Rank_CI[j] == 1){
+          stats1$Rank_CI_color[j] = "blue"}
+        else{
+          if(stats1$Rank_CI[j] == 2){
+            stats1$Rank_CI_color[j] = "lightblue"}
+          else{
+            if(stats1$Rank_CI[j] == 3){
+              stats1$Rank_CI_color[j] = "green"}
+            else{
+              if(stats1$Rank_CI[j] == 4){
+                stats1$Rank_CI_color[j] = "yellowgreen"}
+              else{
+                if(stats1$Rank_CI[j] == 5){
+                  stats1$Rank_CI_color[j] = "yellow"}
+                else{
+                  if(stats1$Rank_CI[j] == 6){
+                    stats1$Rank_CI_color[j] = "orange"}
+                  else{
+                    if(stats1$Rank_CI[j] == 7){
+                      stats1$Rank_CI_color[j] = "red"}}}}}}}}}}
+  if(101 - sum(is.na(stats1$Rank_CI)) == 6){
+    for(j in 1:101){
+      if(is.na(stats1$Rank_CI[j]) == TRUE){
+        stats1$Rank_CI_color[j] = "black"}
+      else{
+        if(stats1$Rank_CI[j] == 1){
+          stats1$Rank_CI_color[j] = "lightblue"}
+        else{
+          if(stats1$Rank_CI[j] == 2){
+            stats1$Rank_CI_color[j] = "green"}
+          else{
+            if(stats1$Rank_CI[j] == 3){
+              stats1$Rank_CI_color[j] = "yellowgreen"}
+            else{
+              if(stats1$Rank_CI[j] == 4){
+                stats1$Rank_CI_color[j] = "yellow"}
+              else{
+                if(stats1$Rank_CI[j] == 5){
+                  stats1$Rank_CI_color[j] = "orange"}
+                else{
+                  if(stats1$Rank_CI[j] == 6){
+                    stats1$Rank_CI_color[j] = "red"}}}}}}}}}
+  if(101 - sum(is.na(stats1$Rank_CI)) == 5){
+    for(j in 1:101){
+      if(is.na(stats1$Rank_CI[j]) == TRUE){
+        stats1$Rank_CI_color[j] = "black"}
+      else{
+        if(stats1$Rank_CI[j] == 1){
+          stats1$Rank_CI_color[j] = "lightblue"}
+        else{
+          if(stats1$Rank_CI[j] == 2){
+            stats1$Rank_CI_color[j] = "green"}
+          else{
+            if(stats1$Rank_CI[j] == 3){
+              stats1$Rank_CI_color[j] = "yellow"}
+            else{
+              if(stats1$Rank_CI[j] == 4){
+                stats1$Rank_CI_color[j] = "orange"}
+              else{
+                if(stats1$Rank_CI[j] == 5){
+                  stats1$Rank_CI_color[j] = "red"}}}}}}}}
+  if(101 - sum(is.na(stats1$Rank_CI)) == 4){
+    for(j in 1:101){
+      if(is.na(stats1$Rank_CI[j]) == TRUE){
+        stats1$Rank_CI_color[j] = "black"}
+      else{
+        if(stats1$Rank_CI[j] == 1){
+          stats1$Rank_CI_color[j] = "green"}
+        else{
+          if(stats1$Rank_CI[j] == 2){
+            stats1$Rank_CI_color[j] = "yellow"}
+          else{
+            if(stats1$Rank_CI[j] == 3){
+              stats1$Rank_CI_color[j] = "orange"}
+            else{
+              if(stats1$Rank_CI[j] == 4){
+                stats1$Rank_CI_color[j] = "red"}}}}}}}
+  if(101 - sum(is.na(stats1$Rank_CI)) == 3){
+    for(j in 1:101){
+      if(is.na(stats1$Rank_CI[j]) == TRUE){
+        stats1$Rank_CI_color[j] = "black"}
+      else{
+        if(stats1$Rank_CI[j] == 1){
+          stats1$Rank_CI_color[j] = "green"}
+        else{
+          if(stats1$Rank_CI[j] == 2){
+            stats1$Rank_CI_color[j] = "yellow"}
+          else{
+            if(stats1$Rank_CI[j] == 3){
+              stats1$Rank_CI_color[j] = "red"}}}}}}
+  stats2 = stats2%>%
+    mutate("Percent Change: Mean" = round(100*(stats2$mean-(stats2$mean[num2]))/(stats2$mean[num2]),4)) %>%
+    mutate("Percent Change: SD" = round(100*(stats2$std-(stats2$std[num2]))/(stats2$std[num2]),4))
+  stats2 = stats2%>%
+    mutate("Mean vs SD Percent Change" = round(stats2$`Percent Change: Mean`/stats2$`Percent Change: SD`,4)) %>%
+    mutate("Lower_CI" = stats2$mean - 1.96*stats2$std) %>%
+    mutate("Upper_CI" = stats2$mean + 1.96*stats2$std)
+  change = vector()
+  if(i == 1){
+    stats2$Rank_color_std[6:13] = "lightblue"}
+  if(i == 2){
+    stats2$Rank_color_std[8:17] = "lightblue"}
+  if(i == 3){
+    stats2$Rank_color_std[11:34] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:41] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[c(15:60, 62:74)] = "lightblue"}
+  stats2 = stats2 %>% 
+    mutate("Signif" = stats1$Lower_CI[1:101] == max(stats1$Lower_CI)| stats1$Num[1:101] %in% c(0,60,100))
+  # for(j in 102:202){
+  #   if(frame$rrr[j-101] == max(frame$rrr[102:202])){
+  #     stats2$Signif[j-101] = TRUE}
+  #   if(frame$sharpe1[j-101] == max(frame$sharpe1[102:202])){
+  #     stats2$Signif[j-101] = TRUE}
+  #   if(frame$sharpe2[j-101] == max(frame$sharpe2[102:202])){
+  #     stats2$Signif[j-101] = TRUE}
+  #   if(frame$sharpe3[j-101] == max(frame$sharpe3[102:202])){
+  #     stats2$Signif[j-101] = TRUE}
+  #   if(frame$sharpe4[j-101] == max(frame$sharpe4[102:202])){
+  #     stats2$Signif[j-101] = TRUE}}
+  stats_signif2 = subset(stats2, stats2$Signif == TRUE)
+  stats_Not_signif2 = subset(stats2, stats2$Signif != TRUE)
+  stats_signif2 = stats_signif2 %>%
+    mutate("Rank_CI" = length(stats_signif2$Signif) + 1 - rank(stats_signif2$Lower_CI))
+  stats_Not_signif2 = stats_Not_signif2 %>%
+    mutate("Rank_CI" = NA)
+  stats2 = rbind(stats_Not_signif2, stats_signif2)
+  stats2_num = order(stats2$Num)
+  stats2 = stats2[c(stats2_num),]
+  stats2 = stats2 %>%
+    mutate("Rank_CI_color" = NA)
+  if(101 - sum(is.na(stats2$Rank_CI)) == 9){
+    for(j in 1:101){
+      if(is.na(stats2$Rank_CI[j]) == TRUE){
+        stats2$Rank_CI_color[j] = "black"}
+      else{
+        if(stats2$Rank_CI[j] == 1){
+          stats2$Rank_CI_color[j] = "blue"}
+        else{
+          if(stats2$Rank_CI[j] == 2){
+            stats2$Rank_CI_color[j] = "lightblue"}
+          else{
+            if(stats2$Rank_CI[j] == 3){
+              stats2$Rank_CI_color[j] = "aquamarine"}
+            else{
+              if(stats2$Rank_CI[j] == 4){
+                stats2$Rank_CI_color[j] = "lightgreen"}
+              else{
+                if(stats2$Rank_CI[j] == 5){
+                  stats2$Rank_CI_color[j] = "green"}
+                else{
+                  if(stats2$Rank_CI[j] == 6){
+                    stats2$Rank_CI_color[j] = "yellowgreen"}
+                  else{
+                    if(stats2$Rank_CI[j] == 7){
+                      stats2$Rank_CI_color[j] = "yellow"}
+                    else{
+                      if(stats2$Rank_CI[j] == 8){
+                        stats2$Rank_CI_color[j] = "orange"}
+                      else{
+                        if(stats2$Rank_CI[j] == 9){
+                          stats2$Rank_CI_color[j] = "red"}}}}}}}}}}}}
+  if(101 - sum(is.na(stats2$Rank_CI)) == 8){
+    for(j in 1:101){
+      if(is.na(stats2$Rank_CI[j]) == TRUE){
+        stats2$Rank_CI_color[j] = "black"}
+      else{
+        if(stats2$Rank_CI[j] == 1){
+          stats2$Rank_CI_color[j] = "blue"}
+        else{
+          if(stats2$Rank_CI[j] == 2){
+            stats2$Rank_CI_color[j] = "lightblue"}
+          else{
+            if(stats2$Rank_CI[j] == 3){
+              stats2$Rank_CI_color[j] = "lightgreen"}
+            else{
+              if(stats2$Rank_CI[j] == 4){
+                stats2$Rank_CI_color[j] = "green"}
+              else{
+                if(stats2$Rank_CI[j] == 5){
+                  stats2$Rank_CI_color[j] = "yellowgreen"}
+                else{
+                  if(stats2$Rank_CI[j] == 6){
+                    stats2$Rank_CI_color[j] = "yellow"}
+                  else{
+                    if(stats2$Rank_CI[j] == 7){
+                      stats2$Rank_CI_color[j] = "orange"}
+                    else{
+                      if(stats2$Rank_CI[j] == 8){
+                        stats2$Rank_CI_color[j] = "red"}}}}}}}}}}}
+  if(101 - sum(is.na(stats2$Rank_CI)) == 7){
+    for(j in 1:101){
+      if(is.na(stats2$Rank_CI[j]) == TRUE){
+        stats2$Rank_CI_color[j] = "black"}
+      else{
+        if(stats2$Rank_CI[j] == 1){
+          stats2$Rank_CI_color[j] = "blue"}
+        else{
+          if(stats2$Rank_CI[j] == 2){
+            stats2$Rank_CI_color[j] = "lightblue"}
+          else{
+            if(stats2$Rank_CI[j] == 3){
+              stats2$Rank_CI_color[j] = "green"}
+            else{
+              if(stats2$Rank_CI[j] == 4){
+                stats2$Rank_CI_color[j] = "yellowgreen"}
+              else{
+                if(stats2$Rank_CI[j] == 5){
+                  stats2$Rank_CI_color[j] = "yellow"}
+                else{
+                  if(stats2$Rank_CI[j] == 6){
+                    stats2$Rank_CI_color[j] = "orange"}
+                  else{
+                    if(stats2$Rank_CI[j] == 7){
+                      stats2$Rank_CI_color[j] = "red"}}}}}}}}}}
+  if(101 - sum(is.na(stats2$Rank_CI)) == 6){
+    for(j in 1:101){
+      if(is.na(stats2$Rank_CI[j]) == TRUE){
+        stats2$Rank_CI_color[j] = "black"}
+      else{
+        if(stats2$Rank_CI[j] == 1){
+          stats2$Rank_CI_color[j] = "lightblue"}
+        else{
+          if(stats2$Rank_CI[j] == 2){
+            stats2$Rank_CI_color[j] = "green"}
+          else{
+            if(stats2$Rank_CI[j] == 3){
+              stats2$Rank_CI_color[j] = "yellowgreen"}
+            else{
+              if(stats2$Rank_CI[j] == 4){
+                stats2$Rank_CI_color[j] = "yellow"}
+              else{
+                if(stats2$Rank_CI[j] == 5){
+                  stats2$Rank_CI_color[j] = "orange"}
+                else{
+                  if(stats2$Rank_CI[j] == 6){
+                    stats2$Rank_CI_color[j] = "red"}}}}}}}}}
+  if(101 - sum(is.na(stats2$Rank_CI)) == 5){
+    for(j in 1:101){
+      if(is.na(stats2$Rank_CI[j]) == TRUE){
+        stats2$Rank_CI_color[j] = "black"}
+      else{
+        if(stats2$Rank_CI[j] == 1){
+          stats2$Rank_CI_color[j] = "lightblue"}
+        else{
+          if(stats2$Rank_CI[j] == 2){
+            stats2$Rank_CI_color[j] = "green"}
+          else{
+            if(stats2$Rank_CI[j] == 3){
+              stats2$Rank_CI_color[j] = "yellow"}
+            else{
+              if(stats2$Rank_CI[j] == 4){
+                stats2$Rank_CI_color[j] = "orange"}
+              else{
+                if(stats2$Rank_CI[j] == 5){
+                  stats2$Rank_CI_color[j] = "red"}}}}}}}}
+  if(101 - sum(is.na(stats2$Rank_CI)) == 4){
+    for(j in 1:101){
+      if(is.na(stats2$Rank_CI[j]) == TRUE){
+        stats2$Rank_CI_color[j] = "black"}
+      else{
+        if(stats2$Rank_CI[j] == 1){
+          stats2$Rank_CI_color[j] = "green"}
+        else{
+          if(stats2$Rank_CI[j] == 2){
+            stats2$Rank_CI_color[j] = "yellow"}
+          else{
+            if(stats2$Rank_CI[j] == 3){
+              stats2$Rank_CI_color[j] = "orange"}
+            else{
+              if(stats2$Rank_CI[j] == 4){
+                stats2$Rank_CI_color[j] = "red"}}}}}}}
+  if(101 - sum(is.na(stats2$Rank_CI)) == 3){
+    for(j in 1:101){
+      if(is.na(stats2$Rank_CI[j]) == TRUE){
+        stats2$Rank_CI_color[j] = "black"}
+      else{
+        if(stats2$Rank_CI[j] == 1){
+          stats2$Rank_CI_color[j] = "green"}
+        else{
+          if(stats2$Rank_CI[j] == 2){
+            stats2$Rank_CI_color[j] = "yellow"}
+          else{
+            if(stats2$Rank_CI[j] == 3){
+              stats2$Rank_CI_color[j] = "red"}}}}}}
+  stats = rbind(stats1, stats2)
+  assign(paste0(name, "_stats"), stats)
+  for(j in 5:9){
+    data = frame[,c(1,2,j,11)]
+    data = data %>%
+      mutate("Type" = colnames(data)[3])
+    colnames(data)[3] = "Value"
+    min1 = min(data$Value[1:101])
+    max1 = max(data$Value[1:101])
+    min2 = min(data$Value[102:202])
+    max2 = max(data$Value[102:202])
+    vect0 = vector()
+    vect0 = append(vect0, c(1,61,101))
+    for(k in 1:101){
+      if(data$Value[[j]] == min1 | data$Value[[k]] == max1){
+        vect0 = append(vect0, k)}}
+    vect0 = unique(vect0)
+    vect0 = sort(vect0)
+    vect1 = vector()
+    vect1 = append(vect1, c(102,162,202))
+    for(k in 102:202){
+      if(data$Value[[k]] == min2| data$Value[[k]] == max2){
+        vect1 = append(vect1, k)}}
+    vect1 = unique(vect1)
+    vect1 = sort(vect1)
+    vect_sig = vector()
+    vect_sig = append(vect_sig, c(vect0,vect1))
+    sig_data1 = data[c(vect0),]
+    sig_data2 = data[c(vect1),]
+    sig_data = data[-c(vect_sig),]
+    sig_data <- sig_data %>%
+      mutate("Rank_Value" = NA)
+    sig_data1 <- sig_data1 %>%
+      mutate("Rank_Value" = 1 + length(sig_data1$Value) - rank(sig_data1$Value))
+    sig_data2 <- sig_data2 %>%
+      mutate("Rank_Value" = 1 + length(sig_data1$Value) - rank(sig_data2$Value))
+    sig_data12 = rbind(sig_data1, sig_data2)
+    data = rbind(sig_data, sig_data1, sig_data2)
+    data_A = subset(data, data$Method == "Arithmetic")
+    data_G = subset(data, data$Method == "Geometric")
+    data_A_num = order(data_A$Num)
+    data_G_num = order(data_G$Num)
+    data_A = data_A[c(data_A_num),]
+    data_G = data_G[c(data_G_num),]
+    data = rbind(data_A, data_G)
+    data["Rank_color_Value"] = NA
+    for(k in 1:202){
+      if(is.na(data$Rank_Value[k]) == TRUE){
+        data$Rank_color_Value[k] = "black"}
+      else{
+        if(data$Rank_Value[k] == 1){
+          data$Rank_color_Value[k] = "green"}
+        else{
+          if(data$Rank_Value[k] == 2){
+            data$Rank_color_Value[k] = "yellow"}
+          else{
+            if(data$Rank_Value[k] == 3){
+              data$Rank_color_Value[k] = "orange"}
+            else{
+              if(data$Rank_Value[k] == 4){
+                data$Rank_color_Value[k] = "red"}}}}}}
+    if(j==5){
+      combo = data}
+    else{
+      if(j!=5){
+        combo = rbind(combo, data)}}
+    assign(paste0(name, "_GoF"), combo)}}
 
 
  
@@ -590,36 +1057,652 @@ signif_geom_sharpe6$type = factor(signif_geom_sharpe6$type, levels = c(signif_ge
 
 ```{r}
 
-signif_pts0 = signif_arith_std
+# Monthly Stats
+Monthly_stats["Allocation1"] = NA
+for(i in 1:202){
+  if(Monthly_stats$Rank_color_std[i] == "lightblue"){
+    Monthly_stats$Allocation1[i] = "Alternatives"}}
+
+
+if(i == 1){
+    stats2$Rank_color_std[6:13] = "lightblue"}
+  if(i == 2){
+    stats2$Rank_color_std[8:17] = "lightblue"}
+  if(i == 3){
+    stats2$Rank_color_std[10:34] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:35] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:41] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:66] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:74] = "lightblue"}
+
+
+signif_stats_Monthly = subset(Monthly_stats, !(Monthly_stats$Rank_color_std %in% c("black", "lightblue")))
+nonsignif_stats_Monthly1 = subset(Monthly_stats, Monthly_stats$Rank_color_std == "black")
+nonsignif_stats_Monthly2 = subset(Monthly_stats, Monthly_stats$Rank_color_std == "lightblue")
+signif_pts0 = signif_stats_Monthly
+signif_pts1 = nonsignif_stats_Monthly1
+signif_pts2 = nonsignif_stats_Monthly2
+signif_pts0$Allocation = factor(signif_pts0$Allocation, levels = c(unique(signif_pts0$Allocation)))
+col_pal <- c(signif_pts0$Rank_color_std)
+col_pal2 <- c(signif_pts2$Rank_color_std)
+vect = vector()
+vect = append(vect, c(col_pal))
+length
+m1 = ggplot(data = signif_pts1, aes(x = std, y = mean, group = Method)) +
+  facet_wrap(~Method, nrow=2, scales = "free") +
+  geom_point(aes(x = std, y = mean, fill = Method)) + 
+  geom_label(data=signif_pts0[c(2,6),], aes(x = std + 0.013, y = mean + 0.0005, color = Method,
+                                   label = paste0("Lowest Risk: ", Num, "/", 100-Num, "\n",
+                                     "Mean: ", round(mean, 4), ", ", 
+                                     "SD: ", round(std, 4))),
+             color = "darkgreen", size=4) +
+  geom_label(data=signif_pts2[c(8,16),], aes(x = std + 0.016, y = mean + 0.0008, color = Method,
+                                   label = paste0("Alternative Options: ", signif_pts2$Num[1], "/", 100 - signif_pts2$Num[1], " - ", signif_pts2$Num[8], "/", 100 - signif_pts2$Num[8])),
+             color = "blue", size=4) +
+  geom_point(data = signif_pts2, aes(fill = Allocation1), shape = 21, size = 2.5) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=4) +
+  scale_fill_manual(values = col_pal2, limits = "Alternatives") +
+  scale_color_manual(values = col_pal) +
+  scale_shape_binned()+
+  labs(title = "Mean vs Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE, order=2),
+         fill = guide_legend(order=1))
+
+Monthly_stats$Allocation = factor(Monthly_stats$Allocation, levels = c(unique(Monthly_stats$Allocation)))
+
+signif1 = subset(Monthly_stats, Monthly_stats$Rank_CI_color != "black")
+signif2 = subset(Monthly_stats, Monthly_stats$Rank_CI_color == "black")
+vect = vector()
+for(i in 1:length(subset(Monthly_stats, Monthly_stats$Rank_CI_color != "black")$Allocation)){
+  vect = append(vect, df$Arithmetic$Rank_CI_color)
+}
+
+m2 = ggplot(data = signif2, aes(x = Num, y = Lower_CI, xend = Num, yend = Upper_CI)) + 
+  geom_segment() + 
+  geom_segment(data = signif1, aes(colour = Allocation), size = 1.5) + ylab("95% CI") + xlab("Asset Allocation") + 
+  facet_wrap(~Method, nrow=2) + 
+  scale_color_manual(values = signif1$Rank_CI_color) + 
+  labs(title = "95% Confidence Interval") + 
+  geom_label(data=signif1[c(2,6),], aes(x = Num + 12, y = Lower_CI - 0.05, color = Method, label = paste0(
+    "Largest Lower Bound: ", Num, "/", 100-Num, "\n","95% CI: ", round(Lower_CI,4))), color = "darkgreen", size=4) +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE), fill = "none")
+
+
+
+grid.arrange(m1,m2, ncol=2, top=text_grob("Monthly Returns", size = 18, face = "bold"))
+
+```
+
+```{r}
+
+# Yearly Stats
+Yearly_stats["Allocation1"] = NA
+for(i in 1:202){
+  if(Yearly_stats$Rank_color_std[i] == "lightblue"){
+    Yearly_stats$Allocation1[i] = "Alternatives"}}
+
+
+if(i == 1){
+    stats2$Rank_color_std[6:13] = "lightblue"}
+  if(i == 2){
+    stats2$Rank_color_std[8:17] = "lightblue"}
+  if(i == 3){
+    stats2$Rank_color_std[10:34] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:35] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:41] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:66] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:74] = "lightblue"}
+
+
+signif_stats_Yearly = subset(Yearly_stats, !(Yearly_stats$Rank_color_std %in% c("black", "lightblue")))
+nonsignif_stats_Yearly1 = subset(Yearly_stats, Yearly_stats$Rank_color_std == "black")
+nonsignif_stats_Yearly2 = subset(Yearly_stats, Yearly_stats$Rank_color_std == "lightblue")
+signif_pts0 = signif_stats_Yearly
+signif_pts1 = nonsignif_stats_Yearly1
+signif_pts2 = nonsignif_stats_Yearly2
+signif_pts0$Allocation = factor(signif_pts0$Allocation, levels = c(unique(signif_pts0$Allocation)))
+col_pal <- c(signif_pts0$Rank_color_std)
+col_pal2 <- c(signif_pts2$Rank_color_std)
+vect = vector()
+vect = append(vect, c(col_pal))
+length
+m1 = ggplot(data = signif_pts1, aes(x = std, y = mean, group = Method)) +
+  facet_wrap(~Method, nrow=2, scales = "free") +
+  geom_point(aes(x = std, y = mean, fill = Method)) + 
+  geom_label(data=signif_pts0[c(2,6),], aes(x = std + 0.06, y = mean + 0.005, color = Method,
+                                   label = paste0("Lowest Risk: ", Num, "/", 100-Num, "\n",
+                                     "Mean: ", round(mean, 4), ", ", 
+                                     "SD: ", round(std, 4))),
+             color = "darkgreen", size=4) +
+  geom_label(data=signif_pts2[c(10,20),], aes(x = std + 0.06, y = mean + 0.008, color = Method,
+                                   label = paste0("Alternative Options: ", signif_pts2$Num[1], "/", 100 - signif_pts2$Num[1], " - ", signif_pts2$Num[10], "/", 100 - signif_pts2$Num[10])),
+             color = "blue", size=4) +
+  geom_point(data = signif_pts2, aes(fill = Allocation1), shape = 21, size = 2.5) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=4) +
+  scale_fill_manual(values = col_pal2, limits = "Alternatives") +
+  scale_color_manual(values = col_pal) +
+  scale_shape_binned()+
+  labs(title = "Mean vs Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE, order=2),
+         fill = guide_legend(order=1))
+
+Yearly_stats$Allocation = factor(Yearly_stats$Allocation, levels = c(unique(Yearly_stats$Allocation)))
+
+signif1 = subset(Yearly_stats, Yearly_stats$Rank_CI_color != "black")
+signif2 = subset(Yearly_stats, Yearly_stats$Rank_CI_color == "black")
+vect = vector()
+for(i in 1:length(subset(Yearly_stats, Yearly_stats$Rank_CI_color != "black")$Allocation)){
+  vect = append(vect, df$Arithmetic$Rank_CI_color)
+}
+
+m2 = ggplot(data = signif2, aes(x = Num, y = Lower_CI, xend = Num, yend = Upper_CI)) + 
+  geom_segment() + 
+  geom_segment(data = signif1, aes(colour = Allocation), size = 1.5) + ylab("95% CI") + xlab("Asset Allocation") + 
+  facet_wrap(~Method, nrow=2) + 
+  scale_color_manual(values = signif1$Rank_CI_color) + 
+  labs(title = "95% Confidence Interval") + 
+  geom_label(data=signif1[c(2,6),], aes(x = Num + 12, y = Lower_CI - 0.17, color = Method, label = paste0(
+    "Largest Lower Bound: ", Num, "/", 100-Num, "\n","95% CI: ", round(Lower_CI,4))), color = "darkgreen", size=4) +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE), fill = "none")
+
+
+
+grid.arrange(m1,m2, ncol=2, top=text_grob("12 Month Returns", size = 18, face = "bold"))
+
+```
+
+```{r}
+
+# Yearly_10 Stats
+Yearly_10_stats["Allocation1"] = NA
+for(i in 1:202){
+  if(Yearly_10_stats$Rank_color_std[i] == "lightblue"){
+    Yearly_10_stats$Allocation1[i] = "Alternatives"}}
+
+
+if(i == 1){
+    stats2$Rank_color_std[6:13] = "lightblue"}
+  if(i == 2){
+    stats2$Rank_color_std[8:17] = "lightblue"}
+  if(i == 3){
+    stats2$Rank_color_std[10:34] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:35] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:41] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:66] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:74] = "lightblue"}
+
+
+signif_stats_Yearly_10 = subset(Yearly_10_stats, !(Yearly_10_stats$Rank_color_std %in% c("black", "lightblue")))
+nonsignif_stats_Yearly_101 = subset(Yearly_10_stats, Yearly_10_stats$Rank_color_std == "black")
+nonsignif_stats_Yearly_102 = subset(Yearly_10_stats, Yearly_10_stats$Rank_color_std == "lightblue")
+signif_pts0 = signif_stats_Yearly_10
+signif_pts1 = nonsignif_stats_Yearly_101
+signif_pts2 = nonsignif_stats_Yearly_102
+signif_pts0$Allocation = factor(signif_pts0$Allocation, levels = c(unique(signif_pts0$Allocation)))
+col_pal <- c(signif_pts0$Rank_color_std)
+col_pal2 <- c(signif_pts2$Rank_color_std)
+vect = vector()
+vect = append(vect, c(col_pal))
+length
+m1 = ggplot(data = signif_pts1, aes(x = std, y = mean, group = Method)) +
+  facet_wrap(~Method, nrow=2, scales = "free") +
+  geom_point(aes(x = std, y = mean, fill = Method)) + 
+  geom_label(data=signif_pts0[c(2,6),], aes(x = std + 0.22, y = mean + 0.005, color = Method,
+                                   label = paste0("Lowest Risk: ", Num, "/", 100-Num, "\n",
+                                     "Mean: ", round(mean, 4), ", ", 
+                                     "SD: ", round(std, 4))),
+             color = "darkgreen", size=4) +
+  geom_label(data=signif_pts2[c(24,48),], aes(x = std + 0.2, y = mean - 0.1, color = Method,
+                                   label = paste0("Alternative Options: ", signif_pts2$Num[1], "/", 100 - signif_pts2$Num[1], " - ", signif_pts2$Num[24], "/", 100 - signif_pts2$Num[24])),
+             color = "blue", size=4) +
+  geom_point(data = signif_pts2, aes(fill = Allocation1), shape = 21, size = 2.5) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=4) +
+  scale_fill_manual(values = col_pal2, limits = "Alternatives") +
+  scale_color_manual(values = col_pal) +
+  scale_shape_binned()+
+  labs(title = "Mean vs Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE, order=2),
+         fill = guide_legend(order=1))
+
+Yearly_10_stats$Allocation = factor(Yearly_10_stats$Allocation, levels = c(unique(Yearly_10_stats$Allocation)))
+
+signif1 = subset(Yearly_10_stats, Yearly_10_stats$Rank_CI_color != "black")
+signif2 = subset(Yearly_10_stats, Yearly_10_stats$Rank_CI_color == "black")
+vect = vector()
+for(i in 1:length(subset(Yearly_10_stats, Yearly_10_stats$Rank_CI_color != "black")$Allocation)){
+  vect = append(vect, df$Arithmetic$Rank_CI_color)
+}
+
+m2 = ggplot(data = signif2, aes(x = Num, y = Lower_CI, xend = Num, yend = Upper_CI)) + 
+  geom_segment() + 
+  geom_segment(data = signif1, aes(colour = Allocation), size = 1.5) + ylab("95% CI") + xlab("Asset Allocation") + 
+  facet_wrap(~Method, nrow=2) + 
+  scale_color_manual(values = signif1$Rank_CI_color) + 
+  labs(title = "95% Confidence Interval") + 
+  geom_label(data=signif1[c(2,6),], aes(x = Num, y = Lower_CI - 0.57, color = Method, label = paste0(
+    "Largest Lower Bound: ", Num, "/", 100-Num, "\n","95% CI: ", round(Lower_CI,4))), color = "darkgreen", size=4) +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE), fill = "none")
+
+
+
+grid.arrange(m1,m2, ncol=2, top=text_grob("120 Month Returns", size = 18, face = "bold"))
+
+```
+
+
+```{r}
+
+# Yearly_20 Stats
+Yearly_20_stats["Allocation1"] = NA
+for(i in 1:202){
+  if(Yearly_20_stats$Rank_color_std[i] == "lightblue"){
+    Yearly_20_stats$Allocation1[i] = "Alternatives"}}
+
+
+if(i == 1){
+    stats2$Rank_color_std[6:13] = "lightblue"}
+  if(i == 2){
+    stats2$Rank_color_std[8:17] = "lightblue"}
+  if(i == 3){
+    stats2$Rank_color_std[10:34] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:35] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:41] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:66] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:74] = "lightblue"}
+
+signif_stats_Yearly_20 = subset(Yearly_20_stats, !(Yearly_20_stats$Rank_color_std %in% c("black", "lightblue")))
+nonsignif_stats_Yearly_201 = subset(Yearly_20_stats, Yearly_20_stats$Rank_color_std == "black")
+nonsignif_stats_Yearly_202 = subset(Yearly_20_stats, Yearly_20_stats$Rank_color_std == "lightblue")
+signif_pts0 = signif_stats_Yearly_20
+signif_pts1 = nonsignif_stats_Yearly_201
+signif_pts2 = nonsignif_stats_Yearly_202
+signif_pts2["Label"] = NA
+signif_pts2$Label[32] = "Alternative Options: 3/97 - 34/66"
+signif_pts2$Label[70] = "Alternative Options: 3/97 - 40/60"
+signif_pts0$Allocation = factor(signif_pts0$Allocation, levels = c(unique(signif_pts0$Allocation)))
+col_pal <- c(signif_pts0$Rank_color_std)
+col_pal2 <- c(signif_pts2$Rank_color_std)
+vect = vector()
+vect = append(vect, c(col_pal))
+length
+m1 = ggplot(data = signif_pts1, aes(x = std, y = mean, group = Method)) +
+  facet_wrap(~Method, nrow=2, scales = "free") +
+  geom_point(aes(x = std, y = mean, fill = Method)) + 
+  geom_label(data=signif_pts0[c(2,6),], aes(x = 3, y = 2.75, color = Method,
+                                   label = paste0("Lowest Risk: ", Num, "/", 100-Num, "\n",
+                                     "Mean: ", round(mean, 4), ", ", 
+                                     "SD: ", round(std, 4))),
+             color = "darkgreen", size=4) +
+  geom_label(data=signif_pts2[c(32,70),], aes(x = 3.75, y = 3.75, color = Method,
+                                   label = Label),
+             color = "blue", size=4) +
+  geom_point(data = signif_pts2, aes(fill = Allocation1), shape = 21, size = 2.5) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=4) +
+  scale_fill_manual(values = col_pal2, limits = "Alternatives") +
+  scale_color_manual(values = col_pal) +
+  scale_shape_binned()+
+  labs(title = "Mean vs Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE, order=2),
+         fill = guide_legend(order=1))
+
+Yearly_20_stats$Allocation = factor(Yearly_20_stats$Allocation, levels = c(unique(Yearly_20_stats$Allocation)))
+
+signif1 = subset(Yearly_20_stats, Yearly_20_stats$Rank_CI_color != "black")
+signif2 = subset(Yearly_20_stats, Yearly_20_stats$Rank_CI_color == "black")
+vect = vector()
+for(i in 1:length(subset(Yearly_20_stats, Yearly_20_stats$Rank_CI_color != "black")$Allocation)){
+  vect = append(vect, df$Arithmetic$Rank_CI_color)
+}
+
+m2 = ggplot(data = signif2, aes(x = Num, y = Lower_CI, xend = Num, yend = Upper_CI)) + 
+  geom_segment() + 
+  geom_segment(data = signif1, aes(colour = Allocation), size = 1.5) + ylab("95% CI") + xlab("Asset Allocation") + 
+  facet_wrap(~Method, nrow=2) + 
+  scale_color_manual(values = signif1$Rank_CI_color) + 
+  labs(title = "95% Confidence Interval") + 
+  geom_label(data=signif1[c(2,6),], aes(x = 17.5, y = 12.5, color = Method, label = paste0(
+    "Largest Lower Bound: ", Num, "/", 100-Num, "\n","95% CI: ", round(Lower_CI,4))), color = "darkgreen", size=4) +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE), fill = "none")
+
+
+
+grid.arrange(m1,m2, ncol=2, top=text_grob("240 Month Returns", size = 18, face = "bold"))
+
+```
+
+```{r}
+
+# Yearly_30 Stats
+Yearly_30_stats["Allocation1"] = NA
+for(i in 1:202){
+  if(Yearly_30_stats$Rank_color_std[i] == "lightblue"){
+    Yearly_30_stats$Allocation1[i] = "Alternatives"}}
+
+
+if(i == 1){
+    stats2$Rank_color_std[6:13] = "lightblue"}
+  if(i == 2){
+    stats2$Rank_color_std[8:17] = "lightblue"}
+  if(i == 3){
+    stats2$Rank_color_std[10:34] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:35] = "lightblue"}
+  if(i == 4){
+    stats2$Rank_color_std[4:41] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:66] = "lightblue"}
+  if(i == 5){
+    stats2$Rank_color_std[15:74] = "lightblue"}
+
+signif_stats_Yearly_30 = subset(Yearly_30_stats, !(Yearly_30_stats$Rank_color_std %in% c("black", "lightblue")))
+nonsignif_stats_Yearly_301 = subset(Yearly_30_stats, Yearly_30_stats$Rank_color_std == "black")
+nonsignif_stats_Yearly_302 = subset(Yearly_30_stats, Yearly_30_stats$Rank_color_std == "lightblue")
+signif_pts0 = signif_stats_Yearly_30
+signif_pts1 = nonsignif_stats_Yearly_301
+signif_pts2 = nonsignif_stats_Yearly_302
+signif_pts2["Label"] = NA
+signif_pts2$Label[51] = "Alternative Options: 14/86 - 65/35"
+signif_pts2$Label[110] = "Alternative Options: 14/86 - 73/27"
+signif_pts0$Allocation = factor(signif_pts0$Allocation, levels = c(unique(signif_pts0$Allocation)))
+col_pal <- c(signif_pts0$Rank_color_std)
+col_pal2 <- c(signif_pts2$Rank_color_std)
+vect = vector()
+vect = append(vect, c(col_pal))
+length
+m1 = ggplot(data = signif_pts1, aes(x = std, y = mean, group = Method)) +
+  facet_wrap(~Method, nrow=2, scales = "free") +
+  geom_point(aes(x = std, y = mean, fill = Method)) + 
+  geom_label(data=signif_pts0[c(2,6),], aes(x = std+1.5, y = mean, color = Method,
+                                   label = paste0("Lowest Risk: ", Num, "/", 100-Num, "\n",
+                                     "Mean: ", round(mean, 4), ", ", 
+                                     "SD: ", round(std, 4))),
+             color = "darkgreen", size=4) +
+  geom_label(data=signif_pts2[c(51,110),], aes(x = 6.5, y = 11, color = Method,
+                                   label = Label),
+             color = "blue", size=4) +
+  geom_point(data = signif_pts2, aes(fill = Allocation1), shape = 21, size = 2.5) +
+  geom_point(data = signif_pts0, aes(color=Allocation), size=4) +
+  scale_fill_manual(values = col_pal2, limits = "Alternatives") +
+  scale_color_manual(values = col_pal) +
+  scale_shape_binned()+
+  labs(title = "Mean vs Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE, order=2),
+         fill = guide_legend(order=1))
+
+Yearly_30_stats$Allocation = factor(Yearly_30_stats$Allocation, levels = c(unique(Yearly_30_stats$Allocation)))
+
+signif1 = subset(Yearly_30_stats, Yearly_30_stats$Rank_CI_color != "black")
+signif2 = subset(Yearly_30_stats, Yearly_30_stats$Rank_CI_color == "black")
+vect = vector()
+for(i in 1:length(subset(Yearly_30_stats, Yearly_30_stats$Rank_CI_color != "black")$Allocation)){
+  vect = append(vect, df$Arithmetic$Rank_CI_color)
+}
+
+m2 = ggplot(data = signif2, aes(x = Num, y = Lower_CI, xend = Num, yend = Upper_CI)) + 
+  geom_segment() + 
+  geom_segment(data = signif1, aes(colour = Allocation), size = 1.5) + ylab("95% CI") + xlab("Asset Allocation") + 
+  facet_wrap(~Method, nrow=2) + 
+  scale_color_manual(values = signif1$Rank_CI_color) + 
+  labs(title = "95% Confidence Interval") + 
+  geom_label(data=signif1[c(3,6),], aes(x = 75, y = -2, color = Method, label = paste0(
+    "Largest Lower Bound: ", Num, "/", 100-Num, "\n","95% CI: ", round(Lower_CI,4))), color = "darkgreen", size=4) +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "bottom",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE), fill = "none")
+
+
+
+grid.arrange(m1,m2, ncol=2, top=text_grob("360 Month Returns", size = 18, face = "bold"))
+
+```
+
+
+```{r}
+# Yearly Stats
+signif_pts0 = signif_stats_Yearly
+signif_pts0$Allocation = factor(signif_pts0$Allocation, levels = c(unique(signif_pts0$Allocation)))
 col_pal <- c(signif_pts0$Rank_Color)
-ggplot(data = arith_monthly, aes(x = std, y = mean, color = factor(type))) + 
-  geom_point() + 
-  geom_label(data=signif_pts0[2,], aes(x = std, y = mean, 
+vect = vector()
+vect = append(vect, c(col_pal))
+p2 <- ggplot(data = Yearly_stats, aes(x = std, y = mean, group = Method)) +
+  facet_wrap(~Method, nrow=2) +
+  geom_point(aes(x = std, y = mean, fill = Method)) + 
+  geom_label(data=signif_pts0[c(2,6),], aes(x = std, y = mean, color = Method,
                                    label = paste0(
                                      "Mean: ", round(mean, 4), "\n", 
                                      "SD: ", round(std, 4))),
+             color = "darkgreen", size=4, nudge_x = 0.02) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5) +
+  scale_color_manual(values = vect) +
+  labs(title = "12 Month Returns") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =12),
+        axis.text = element_text(size = 8),
+        axis.title = element_text(size=8),
+        strip.text = element_text(size=8),
+        legend.position = "bottom",
+        legend.text = element_text(size=7.75),
+        legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE),
+         fill = "none") +
+  scale_y_continuous(n.breaks=4)
+
+
+
+# grid.arrange(p1,p2, ncol=2)
+
+
+
+# Yearly 10 stats
+signif_pts0 = signif_stats_Yearly10
+signif_pts0$Allocation = factor(signif_pts0$Allocation, levels = c(unique(signif_pts0$Allocation)))
+col_pal <- c(signif_pts0$Rank_Color)
+vect = vector()
+vect = append(vect, c(col_pal))
+p3 <- ggplot(data = Yearly_10_stats, aes(x = std, y = mean, group = Method)) +
+  facet_wrap(~Method, nrow=2) +
+  geom_point(aes(x = std, y = mean, fill = Method)) + 
+  geom_label(data=signif_pts0[c(2,6),], aes(x = 0.1, y = 0.8, color = Method,
+                                   label = paste0(
+                                     "Mean: ", round(mean, 4), "\n", 
+                                     "SD: ", round(std, 4))),
+             color = "darkgreen", size=2.5, nudge_x = 0.15, nudge_y = 0.00025) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=2.5) +
+  scale_color_manual(values = vect) +
+  labs(title = "10 Year Returns") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =12),
+        axis.text = element_text(size = 8),
+        axis.title = element_text(size=8),
+        strip.text = element_text(size=8),
+        legend.position = "bottom",
+        legend.text = element_text(size=7.75),
+        legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE),
+         fill = "none") +
+  scale_y_continuous(n.breaks=4)
+
+signif_pts0 = signif_stats_Yearly30
+signif_pts0$Allocation = factor(signif_pts0$Allocation, levels = c(unique(signif_pts0$Allocation)))
+col_pal <- c(signif_pts0$Rank_Color)
+vect = vector()
+vect = append(vect, c(col_pal))
+p4 <- ggplot(data = Yearly_30_stats, aes(x = std, y = mean, group = Method)) +
+  facet_wrap(~Method, nrow=2) +
+  geom_point(aes(x = std, y = mean, fill = Method)) + 
+  geom_label(data=signif_pts0[c(2,6),], aes(x = std, y = mean, color = Method,
+                                   label = paste0(
+                                     "Mean: ", round(mean, 4), "\n", 
+                                     "SD: ", round(std, 4))),
+             color = "darkgreen", size=4, nudge_x = 1, nudge_y=0.5) + 
+  geom_point(data = signif_pts0, aes(color=Allocation), size=5) +
+  scale_color_manual(values = vect) +
+  labs(title = "20 Year Returns") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =12),
+        axis.text = element_text(size = 8),
+        axis.title = element_text(size=8),
+        strip.text = element_text(size=8),
+        legend.position = "bottom",
+        legend.text = element_text(size=7.75),
+        legend.title = element_blank()) +
+  guides(color = guide_legend(nrow = 2, byrow = TRUE),
+         fill = "none") +
+  scale_y_continuous(n.breaks=4)
+
+
+
+
+
+
+grid.arrange(p1,p2,p3,p4,p1,p2, ncol=3)
+```
+
+```{r}  
+  
+signif_pts0 = signif_GoF_Monthly
+signif_pts0$Allocation = factor(signif_pts0$Allocation, levels = c(unique(signif_pts0$Allocation)))
+# signif_pts0$Rank_Color = c("yellow", "red", "green", "orange", "yellow", "red", "green", "orange")
+col_pal <- c(signif_pts0$Rank_Color)
+vect = vector()
+vect = append(vect, c("black", "purple"))
+vect = append(vect, c(col_pal))
+ggplot(data = Monthly_GoF, aes(x = Num, y = Value, color = Type)) +
+  facet_wrap(~Method) +
+  geom_point() + 
+  geom_label(data=signif_pts0[c(2,6,10,14,18,22,26,29,33,37,41,45,49,53),], aes(x = Num, y = Value, color = Method,
+                                   label = paste0(
+                                     "Sharpe Ratio: ", round(Value, 4))),
              color = "darkgreen", size=4, nudge_x = 0.005) + 
-  geom_point(data = signif_pts0, aes(color=Allocation), size=5)+
-  scale_color_manual(values = col_pal)+
-  labs(title = "Arithmetic Monthly Average Returns: \n Mean vs. Standard Deviation") +
+  geom_point(data = subset(signif_pts0, signif_pts0$Rank_Color == "green"),aes(color = "green"),shape = 5, size=5) +
+  scale_color_manual(values = vect) +
+  labs(title = "Monthly Average Returns") +
   ylab("Mean") +
   xlab("Standard Deviation") +
   theme(plot.title = element_text(hjust = 0.5, size =18),
         axis.text = element_text(size = 12),
         axis.title = element_text(size=15),
-        legend.position = c(0.75, 0.25),
+        strip.text = element_text(size=15),
+        legend.position = c(0.85, 0.25),
         legend.text = element_text(size=12),
-        legend.title = element_text(size=15))
+        legend.title = element_text("Allocation", size=15)) +
+  guides(color = guide_legend(override.aes = list(col_pal) ),
+            shape = guide_legend(override.aes = list(linetype = 1) ) )
 
+
+
+guides(color = guide_legend(
+    override.aes=list(shape = 18)))
 
 ```
-
-```{r}  
-  
-
-
-
-
+```{r}
 # yearly averages
 Yearly_Data_plus = Yearly_Data
 Yearly_Data_plus[, 4:104] = Yearly_Data_plus[, 4:104] + 1
