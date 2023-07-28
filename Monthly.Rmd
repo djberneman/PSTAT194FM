@@ -42,7 +42,7 @@ IB_plus[,2:3] = 1 + IB_plus[,2:3]
 
 vect0 = vector()
 for(i in 0:100){
-  vect0 = append(vect0, paste0("Large_Cap: ", i, "%,  ", "Fixed: ", 100-i, "%"))}
+  vect0 = append(vect0, paste0("Large Cap: ", i, "%,  ", "Fixed: ", 100-i, "%"))}
 
 Monthly_Data_plus = Monthly_Data
 Monthly_Data_plus[,2:3] = Monthly_Data[,2:3]+1
@@ -2152,6 +2152,117 @@ significant_losses %>%
         axis.title = element_text(size = 15),
         title =element_text(size=18, face='bold'),
         legend.text = element_text(size = 12))
+
+
+```
+
+```{r}
+options(scipen = 7)
+US_TR <- read_excel("Pension Investment Calculation (Annual) MRP600 Sim.xlsx", 
+    sheet = "US TR", range = "B1:AE1000", 
+    col_names = FALSE)
+for(i in 1:30){
+  colnames(US_TR)[i] = paste0("Year",i)}
+
+FIXED_TR <- read_excel("Pension Investment Calculation (Annual) MRP600 Sim.xlsx", 
+    sheet = "FIXED TR", range = "B1:AE1000", 
+    col_names = FALSE)
+for(i in 1:30){
+  colnames(FIXED_TR)[i] = paste0("Year",i)}
+
+Weighted_TR  <- read_excel("Pension Investment Calculation (Annual) MRP600 Sim.xlsx", 
+    sheet = "Weighted TR", range = "B1:AE1000", 
+    col_names = FALSE)
+for(i in 1:30){
+  colnames(Weighted_TR)[i] = paste0("Year",i)}
+
+Pension <- read_excel("Pension Investment Calculation (Annual) MRP600 Sim.xlsx", 
+    sheet = "Pension Fund Balance", range = "C2:AG1007", 
+    col_names = FALSE)
+for(i in 0:30){
+  colnames(Pension)[i+1] = paste0("Year",i)}
+payments = Pension[2,2:31]
+Pension = Pension[6:1005,]
+Pension$Year0 = as.integer(Pension$Year0)
+
+
+for(i in 0:100){
+  alpha = i/100
+  weight = Weighted_TR
+  weight[,1:30] = NA
+  for(j in 1:30){
+    bind = cbind(data.frame(US_TR[,j]), data.frame(FIXED_TR[,j]))
+    colnames(bind) = c("US", "FIX")
+    bind = bind %>%
+      mutate("weight" = bind$US * alpha + bind$FIX * (1-alpha))
+    if(j == 1){
+      weight = cbind(data.frame(bind[,3]), data.frame(weight[,2:30]))}
+    if(j == 30){
+      weight = cbind(data.frame(weight[,1:29]), data.frame(bind[,3]))}
+    if(j %in% c(seq(2,29,1))){
+      weight = cbind(data.frame(weight[,1:j-1]), data.frame(bind[,3]),
+                     data.frame(weight[,c((j+1):30)]))}
+    colnames(weight)[j] = paste0("Year", j)}
+  assign(paste0("Weighted_", i), weight)}
+
+insolvency_rate = 0.0700
+for(i in 0:100){
+  pension = Pension
+  pension[,2:31] = NA
+  weight = get(paste0("Weighted_", i))
+  for(j in 1:30){
+    frame = data.frame(matrix(ncol=2,nrow=1000))
+    frame[,1] = c(seq(1,1000,1))
+    frame[,2] = c(rep(payments[1,j],1000))
+    data = cbind(data.frame(frame[,1]), data.frame(pension[,j]), data.frame(weight[,j]), data.frame(frame[,2]))
+    colnames(data) = c("Num", "Last_Year", "Weight", "payment")
+    sub1 = subset(data, data$Last_Year > 0)
+    sub2 = subset(data, data$Last_Year < 0)
+    sub1 = sub1 %>%
+      mutate("Balance" = sub1$Last_Year * (1+sub1$Weight) - sub1$payment)
+    if(length(sub1$Num) != 1000){
+      sub2 = sub2 %>%
+        mutate("Balance" = sub2$Last_Year * (1 + insolvency_rate) - sub2$payment)}
+    data = rbind(sub1, sub2)
+    data_num = order(data$Num)
+    data = data[c(data_num),]
+    pension[1:1000, j+1] = data$Balance[1:1000]}
+  assign(paste0("Pension_", i), pension)}
+  
+for(i in 0:100){
+  end = get(paste0("Pension_", i))
+  if(i == 0){
+    End_Balance = data.frame(end$Year30)}
+  if(i != 0){
+    End_Balance = cbind(End_Balance, data.frame(end$Year30))}
+  colnames(End_Balance)[i+1] = paste0("Pension_", i)}
+
+vect0 = vector()
+for(i in 0:100){
+  vect0 = append(vect0, paste0("Large Cap: ", i, "% | ", "Fixed: ", 100-i, "%"))}
+
+ci = 0.05*525
+End_stats = data.frame(matrix(nrow = 101, ncol = 13))
+colnames(End_stats) = c("Allocation", "Num", "Mean", "Std", "P[0 < Balalce]", "P[-26.25 < Balalce]", "Average Deficit", "Under_Std", "Average Excess", "Over_Std", "Conditionally Expected Deficit", "Conditionally Expected Excess", "Expected Difference" )
+End_stats$Allocation = c(vect0)
+End_stats$Allocation = factor(End_stats$Allocation, levels = c(End_stats$Allocation))
+End_stats$Num = c(seq(0,100,1))
+
+for(i in 0:100){
+  End = End_Balance[,i+1]
+  end_under = subset(End_Balance[, i+1], End_Balance[, i+1] < 0)
+  end_over = subset(End_Balance[, i+1], End_Balance[, i+1] > 0)
+  End_stats$Mean[i+1] = mean(End)
+  End_stats$Std[i+1] = sqrt(var(End))
+  End_stats$`P[0 < Balalce]`[i+1] = pnorm(0, mean = End_stats$Mean[i+1], sd = End_stats$Std[i+1], lower.tail = FALSE)
+  End_stats$`P[-26.25 < Balalce]`[i+1] = pnorm(-26.25, mean = End_stats$Mean[i+1], sd = End_stats$Std[i+1], lower.tail = FALSE)
+  End_stats$`Average Deficit`[i+1] = mean(end_under)
+  End_stats$Under_Std[i+1] = sqrt(var(end_under))
+  End_stats$`Average Excess`[i+1] = mean(end_over)
+  End_stats$Over_Std[i+1] = sqrt(var(end_over))
+  End_stats$`Conditionally Expected Deficit`[i+1] = End_stats$`Average Deficit`[i+1] * (1 - End_stats$`P[0 < Balalce]`)
+  End_stats$`Conditionally Expected Excess`[i+1] = End_stats$`Average Excess`[i+1] * End_stats$`P[0 < Balalce]`
+  End_stats$`Expected Difference`[i+1] = End_stats$`Conditionally Expected Deficit`[i+1] + End_stats$`Conditionally Expected Excess`[i+1]}
 
 
 ```
