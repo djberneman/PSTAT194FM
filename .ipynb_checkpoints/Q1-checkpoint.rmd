@@ -1,0 +1,49 @@
+---
+title: \textbf{Navigating Pension Investment Risk}
+author: \textbf{Dylan Berneman}
+header-includes:
+    - \usepackage{setspace}\doublespacing
+output: pdf_document
+indent: true
+date: \textbf{2023-08-01}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+\newpage
+
+\begingroup
+\centering
+\Large \textbf{Executive Summary} \par
+\endgroup
+
+|   The purpose of this report is to address the important concerns and questions that have been brought up due to the 16.2% investment loss of the MERS fund experienced in calendar year 2022. We will be reviewing the historical data over the past century, the current MERS investment approach alongside its advantages and disadvantages, and alternative approaches that might prove more advantageous when considering a 30 year pension fund and the premise of a one-time top-up.
+
+\begingroup
+\centering
+\large Dilemma \par
+\endgroup
+
+|   The traditional investment approach the firm has used for the MERS fund has been a 60/40 investment approach where 60% of the funds are invested in US large cap equities and 40% of the funds are invested in a blended fixed income fund. The blended fixed income fund is composed of an asset mix of 65% intermediate-term government bonds and 35% long-term corporate bonds. The MERS fund experienced an investment return of -16.2% in calendar year 2022. This recent loss leads to a few questions about the MERS fund. Firstly, will the recent rise in long-term bond yields likely be a temporary effect that could go away? Next, are there alternative investment approaches that could prove to be more beneficial for the pension fund? And finally, how will a one-time top-up of $175 million effect the outcome and will it necessitate an alternative investment approach?
+
+\begingroup
+\centering
+\large Answers and Solutions \par
+\endgroup
+
+|   We will first address the recent rise in long-term bond yields. The rise in long-term bond yields is a result of the significant increase in interest rates from between 0.25% and 0.5% to between 4.25% and 4.5%. According to CFP, Hal M. Bundrick, the interest rate is likely to only remain high until the Federal Reserve reaches its 2% inflation goal. At that point, the Federal Reserve will begin lowering interest rates to restimulate the economy. Since this is projected to occur sometime in 2024, it implies that the recent rise in long-term bond yields will be a temporary effect which will go away in the near future.
+
+|   Furthermore, the 2022 experience is unlikely to repeat itself once interest rates return to normal. Using the AIRG Economic Scenario Generator (ESG), it has been calculated that there is less than a 1.32% chance of another year experiencing a loss of more than 16% on total returns for the MERS fund. Further explanation will be provided in the main report.
+
+|   Concerning the current strategy of the MERS fund, it has been concluded that it is a suboptimal investment approach for the purpose of a 30 pension fund. A more detailed explanation for this along with the merits of the current investment approach will be discussed in more detail within the main report.
+
+|   Finally, a one-time top-up will increase the probability of acquiring sufficient funds for the pension plan, but will result in a large surplus that will need to be refunded to the city. The reasons for this surplus will be portrayed through the examination of what happens when the beginning funds are increased or decreased.
+
+\newpage
+
+# The 60/40 Investment Approach
+
+\
+\| The first topic that will be addressed is the reason for 2022 investment loss. During 2022, bonds suffered their worst year on record. This is vitally important to note because bonds are considered to be a defensive asset because they are less volatile than stocks. For this reason, investors include bonds in their portfolio as a way to help reduce volatility and overall portfolio risk in the event that there is a significant market downturn, which did occur in 2022. Unexpectedly, the US government increased the interest rate by a cummulative 4.25%, the most since 1980. Consequentially, when interest rates increase, the value of bonds decreases. Additionally, inflation impacts the real rate of return of fixed-income investments. This decrease in real return makes the bond less attractive to investors, leading to a decrease in bond prices. When inflation is larger than the interest rate, investors tend to reinvest their fixed-income investments in order to minimize their total return losses, leading to a decrease in the real value of the fixed-income investments. Because these events took place concurrently alongside a significant market downturn, every single asset allocation strategy resulted in a minimum total loss of 13.3%.

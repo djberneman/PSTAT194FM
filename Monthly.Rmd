@@ -23,6 +23,8 @@ install.packages("ggpubr")
 library(ggpubr)
 ```
 
+
+# Data
 ```{r}
 Monthly_Data <- read_excel("Project 2 Historical Data.xlsx", 
     sheet = "60-40 Returns Monthly", range = "B10:D1174")
@@ -455,6 +457,8 @@ write.csv(arith, "arith.csv", col.names=colnames(arith), row.names = FALSE, quot
 write.csv(geom, "geom.csv", col.names=colnames(geom), row.names = FALSE, quote=TRUE)
 ```
 
+
+# Saved data frames and significant points
 ```{r}
 arith_monthly = read.csv("arith_monthly.csv")
 geom_monthly = read.csv("geom_monthly.csv")
@@ -1017,9 +1021,9 @@ for(i in 1:5){
 ```
 
 
+# Monthly Stats
 ```{r}
 
-# Monthly Stats
 Monthly_stats["Allocation1"] = NA
 for(i in 1:202){
   if(Monthly_stats$Rank_color_std[i] == "lightblue"){
@@ -1113,8 +1117,9 @@ m2 = ggplot(data = signif2, aes(x = Num, y = Lower_CI, xend = Num, yend = Upper_
 grid.arrange(m1,m2, ncol=2, top=text_grob("Monthly Returns", size = 18, face = "bold"))
 
 ```
-```{r}
+
 # Monthly GoF
+```{r}
 
 signif_GoF_Monthly = subset(Monthly_GoF, Monthly_GoF$Rank_color_Value != "black" & Monthly_GoF$Type == "rrr")
 nonsignif_GoF_Monthly1 = subset(Monthly_GoF, Monthly_GoF$Rank_color_Value == "black" & Monthly_GoF$Type == "rrr")
@@ -1209,16 +1214,10 @@ mr3 = ggplot(data = signif_pts1, aes(x = Num, y = Value, group = Method)) +
   guides(color = guide_legend(nrow = 4, byrow = TRUE, order=2),
          fill = "none")
 
-
-
-
 grid.arrange(mr1,mr2,mr3, ncol=3, top=text_grob("Monthly Returns", size = 18, face = "bold"))
-
 ```
-
-```{r}
-
 # Yearly Stats
+```{r}
 Yearly_stats["Allocation1"] = NA
 for(i in 1:202){
   if(Yearly_stats$Rank_color_std[i] == "lightblue"){
@@ -1312,9 +1311,8 @@ y2 = ggplot(data = signif2, aes(x = Num, y = Lower_CI, xend = Num, yend = Upper_
 grid.arrange(y1,y2, ncol=2, top=text_grob("12 Month Returns", size = 18, face = "bold"))
 
 ```
-
-```{r}
 # Yearly GoF
+```{r}
 
 signif_GoF_Yearly = subset(Yearly_GoF, Yearly_GoF$Rank_color_Value != "black" & Yearly_GoF$Type == "rrr")
 nonsignif_GoF_Yearly1 = subset(Yearly_GoF, Yearly_GoF$Rank_color_Value == "black" & Yearly_GoF$Type == "rrr")
@@ -1415,9 +1413,10 @@ yr3 = ggplot(data = signif_pts1, aes(x = Num, y = Value, group = Method)) +
 grid.arrange(yr1,yr2,yr3, ncol=3, top=text_grob("12 Month Returns", size = 18, face = "bold"))
 
 ```
-```{r}
 
 # Yearly_10 Stats
+```{r}
+
 Yearly_10_stats["Allocation1"] = NA
 for(i in 1:202){
   if(Yearly_10_stats$Rank_color_std[i] == "lightblue"){
@@ -1512,8 +1511,8 @@ grid.arrange(y110,y210, ncol=2, top=text_grob("120 Month Returns", size = 18, fa
 
 ```
 
-```{r}
 # Yearly_10 GoF
+```{r}
 
 signif_GoF_Yearly_10 = subset(Yearly_10_GoF, Yearly_10_GoF$Rank_color_Value != "black" & Yearly_10_GoF$Type == "rrr")
 nonsignif_GoF_Yearly_101 = subset(Yearly_10_GoF, Yearly_10_GoF$Rank_color_Value == "black" & Yearly_10_GoF$Type == "rrr")
@@ -1562,7 +1561,7 @@ yr110 = ggplot(data = signif_pts1, aes(x = Num, y = Value, group = Method)) +
   scale_color_manual(values = c("red", "green", "yellow", "orange", "orange","green", "red", "red")) +
   labs(title = "Risk Reward Ratio") +
   ylab("Ratio") +
-  xlab("Allocation (Large Cap)") +
+  xlab("Asset Allocation") +
   theme(plot.title = element_text(hjust = 0.5, size =15),
         axis.text = element_text(size = 10),
         axis.title = element_text(size=12),
@@ -1622,7 +1621,7 @@ yr210 = ggplot(data = signif_pts1, aes(x = Num, y = Value, group = Method)) +
   geom_point(data = signif_pts0, aes(color=Allocation), size=4) +
   scale_color_manual(values = c("red", "green", "yellow", "orange", "orange","green", "red", "red")) +  labs(title = "Sharpe Ratio 1") +
   ylab("Ratio") +
-  xlab("Allocation (Large Cap)") +
+  xlab("Asset Allocation") +
   theme(plot.title = element_text(hjust = 0.5, size =15),
         axis.text = element_text(size = 10),
         axis.title = element_text(size=12),
@@ -1680,7 +1679,7 @@ yr310 = ggplot(data = signif_pts1, aes(x = Num, y = Value, group = Method)) +
   geom_point(data = signif_pts0, aes(color=Allocation), size=4) +
   scale_color_manual(values = c("red", "green", "yellow", "orange", "orange","green", "red", "red")) +  labs(title = "Sharpe Ratio 2") +
   ylab("Ratio") +
-  xlab("Allocation (Large Cap)") +
+  xlab("Asset Allocation") +
   theme(plot.title = element_text(hjust = 0.5, size =15),
         axis.text = element_text(size = 10),
         axis.title = element_text(size=12),
@@ -1697,10 +1696,9 @@ grid.arrange(yr110,yr210,yr310, ncol=3, top=text_grob("120 Month Returns", size 
 
 ```
 
-
+# Yearly_20 Stats
 ```{r}
 
-# Yearly_20 Stats
 Yearly_20_stats["Allocation1"] = NA
 for(i in 1:202){
   if(Yearly_20_stats$Rank_color_std[i] == "lightblue"){
@@ -1799,9 +1797,8 @@ grid.arrange(y120,y220, ncol=2, top=text_grob("240 Month Returns", size = 18, fa
 ```
 
 
-
-```{r}
 # Yearly_20 GoF
+```{r}
 
 signif_GoF_Yearly_20 = subset(Yearly_20_GoF, Yearly_20_GoF$Rank_color_Value != "black" & Yearly_20_GoF$Type == "rrr")
 nonsignif_GoF_Yearly_201 = subset(Yearly_20_GoF, Yearly_20_GoF$Rank_color_Value == "black" & Yearly_20_GoF$Type == "rrr")
@@ -1903,10 +1900,9 @@ grid.arrange(yr120,yr220,yr320, ncol=3, top=text_grob("240 Month Returns", size 
 
 ```
 
-
+# Yearly_30 Stats
 ```{r}
 
-# Yearly_30 Stats
 Yearly_30_stats["Allocation1"] = NA
 for(i in 1:202){
   if(Yearly_30_stats$Rank_color_std[i] == "lightblue"){
@@ -2002,9 +1998,8 @@ grid.arrange(y130,y230, ncol=2, top=text_grob("360 Month Returns", size = 18, fa
 
 ```
 
-
-```{r}
 # Yearly_30 GoF
+```{r}
 
 signif_GoF_Yearly_30 = subset(Yearly_30_GoF, Yearly_30_GoF$Rank_color_Value != "black" & Yearly_30_GoF$Type == "rrr")
 nonsignif_GoF_Yearly_301 = subset(Yearly_30_GoF, Yearly_30_GoF$Rank_color_Value == "black" & Yearly_30_GoF$Type == "rrr")
@@ -2105,7 +2100,7 @@ yr330 = ggplot(data = signif_pts1, aes(x = Num, y = Value, group = Method)) +
 grid.arrange(yr130,yr230,yr330, ncol=3, top=text_grob("360 Month Returns", size = 18, face = "bold"))
 
 ```
-
+# Probability of similar losses
 ```{r}
 # Portfolio 60/40
 sig_loss1 = qnorm(0.05, mean = mean(Yearly_Data$Folio60), sd = sqrt(var(Yearly_Data$Folio60)), lower.tail = TRUE)
@@ -2154,9 +2149,47 @@ significant_losses %>%
         legend.text = element_text(size = 12))
 
 
-```
+# Prob from simulation
+weighted_TR <- read_excel("Pension Investment Calculation (Annual) MRP600 Sim.xlsx", 
+    sheet = "Weighted TR", col_names = FALSE)
 
-```{r}
+list = data.frame(matrix(ncol=1, nrow = 30000))
+for(i in 1:30){
+  x= 1000 * (i-1) + 1
+  y = 1000 * i
+  list[x:y,1] = weighted_TR[,i]}
+
+pnorm(-0.16, mean = mean(list[,1]), sd = sd(list[,1]), lower.tail = TRUE)
+# 0.01316642
+
+# Prob from historical data
+Data = Yearly_Data$Folio60[1:1152]
+pnorm(-0.16, mean = mean(Data), sd = sd(Data), lower.tail = TRUE)
+# 0.02569
+
+Data1 = Monthly_Data$Folio60[1:1152]
+pnorm(-0.010837929, mean = mean(Data1), sd = sd(Data1), lower.tail = TRUE)
+
+Annual_Data = data.frame(matrix(nrow=96, ncol=1))
+x=1
+for(i in 1:1152){
+  if((i-1)%%12==0){
+    Annual_Data[x,1] = Data[i]
+    x = x + 1}}
+pnorm(-0.16, mean = mean(Annual_Data[,1]), sd = sd(Annual_Data[,1]), lower.tail = TRUE)
+# 0.02037196
+
+# Annual
+Annual <- read_excel("Project 2 Historical Data.xlsx", 
+    sheet = "60-40 Returns Annual", range = "E10:E107")
+
+pnorm(-0.16, mean = sum(Annual[1:96,1])/96, sd = sqrt(var(Annual[1:96,1])), lower.tail = TRUE)
+
+
+
+```
+# Pension
+```{r, warning=FALSE}
 options(scipen = 7)
 US_TR <- read_excel("Pension Investment Calculation (Annual) MRP600 Sim.xlsx", 
     sheet = "US TR", range = "B1:AE1000", 
@@ -2265,4 +2298,952 @@ for(i in 0:100){
   End_stats$`Expected Difference`[i+1] = End_stats$`Conditionally Expected Deficit`[i+1] + End_stats$`Conditionally Expected Excess`[i+1]}
 
 
+
+prob = data.frame(End_stats[,c(1,2,5)])
+
+vect0 = vector()
+vect0 = append(vect0, c(1,61,101))
+vect1 = vect0
+vect2 = vect0
+vect3 = vect0
+vect4 = vect0
+vect5 = vect0
+vect6 = vect0
+for(i in 0:100){
+  if(End_stats$Std[i+1] == max(End_stats$Std) |
+     End_stats$Std[i+1] == min(End_stats$Std)){
+    vect0 = append(vect0, i+1)}
+  vect0 = sort(unique(vect0))
+  sig0 = End_stats[c(vect0),]
+  sig0 = sig0 %>%
+    mutate("Rank" = rank(sig0$Std))
+  sig0["Color"] = NA
+  for(j in 1:length(sig0$Rank)){
+    if(sig0$Rank[j] == 1){
+      sig0$Color[j] = "green"}
+    if(sig0$Rank[j] == 2){
+      sig0$Color[j] = "yellow"}
+    if(sig0$Rank[j] == 3){
+      sig0$Color[j] = "red"}}
+  if(End_stats$`P[0 < Balalce]`[i+1] == max(End_stats$`P[0 < Balalce]`) |
+     End_stats$`P[0 < Balalce]`[i+1] == min(End_stats$`P[0 < Balalce]`)){
+    vect1 = append(vect1, i+1)}
+  vect1 = sort(unique(vect1))
+  sig1 = End_stats[c(vect1),]
+  sig1 = sig1 %>%
+    mutate("Rank" = 5 - rank(sig1$`P[0 < Balalce]`))
+  sig1["Color"] = NA
+  for(j in 1:length(sig1$Rank)){
+    if(sig1$Rank[j] == 1){
+      sig1$Color[j] = "green"}
+    if(sig1$Rank[j] == 2){
+      sig1$Color[j] = "yellow"}
+    if(sig1$Rank[j] == 3){
+      sig1$Color[j] = "orange"}
+    if(sig1$Rank[j] == 4){
+      sig1$Color[j] = "red"}}
+  if(End_stats$`Average Deficit`[i+1] == max(End_stats$`Average Deficit`) |
+     End_stats$`Average Deficit`[i+1] == min(End_stats$`Average Deficit`)){
+    vect2 = append(vect2, i+1)}
+  vect2 = sort(unique(vect2))
+  sig2 = End_stats[c(vect2),]
+  sig2 = sig2 %>%
+    mutate("Rank" = 5-rank(sig2$`Average Deficit`))
+  sig2["Color"] = NA
+  for(j in 1:length(sig2$Rank)){
+    if(sig2$Rank[j] == 1){
+      sig2$Color[j] = "green"}
+    if(sig2$Rank[j] == 2){
+      sig2$Color[j] = "yellow"}
+    if(sig2$Rank[j] == 3){
+      sig2$Color[j] = "orange"}
+    if(sig2$Rank[j] == 4){
+      sig2$Color[j] = "red"}}
+  if(End_stats$`Average Excess`[i+1] == max(End_stats$`Average Excess`) |
+     End_stats$`Average Excess`[i+1] == min(End_stats$`Average Excess`)){
+    vect3 = append(vect3, i+1)}
+  vect3 = sort(unique(vect3))
+  sig3 = End_stats[c(vect3),]
+  sig3 = sig3 %>%
+    mutate("Rank" = rank(sig3$`Average Excess`))
+  sig3["Color"] = NA
+  for(j in 1:length(sig3$Rank)){
+    if(sig3$Rank[j] == 1){
+      sig3$Color[j] = "green"}
+    if(sig3$Rank[j] == 2){
+      sig3$Color[j] = "yellow"}
+    if(sig3$Rank[j] == 3){
+      sig3$Color[j] = "red"}}
+  if(End_stats$`Conditionally Expected Deficit`[i+1] == max(End_stats$`Conditionally Expected Deficit`) |
+     End_stats$`Conditionally Expected Deficit`[i+1] == min(End_stats$`Conditionally Expected Deficit`)){
+    vect4 = append(vect4, i+1)}
+  vect4 = sort(unique(vect4))
+  sig4 = End_stats[c(vect4),]
+  sig4 = sig4 %>%
+    mutate("Rank" = 5-rank(sig4$`Conditionally Expected Deficit`))
+  sig4["Color"] = NA
+  for(j in 1:length(sig4$Rank)){
+    if(sig4$Rank[j] == 1){
+      sig4$Color[j] = "green"}
+    if(sig4$Rank[j] == 2){
+      sig4$Color[j] = "yellow"}
+    if(sig4$Rank[j] == 3){
+      sig4$Color[j] = "orange"}
+    if(sig4$Rank[j] == 4){
+      sig4$Color[j] = "red"}}
+  if(End_stats$`Conditionally Expected Excess`[i+1] == max(End_stats$`Conditionally Expected Excess`) |
+     End_stats$`Conditionally Expected Excess`[i+1] == min(End_stats$`Conditionally Expected Excess`)){
+    vect5 = append(vect5, i+1)}
+  vect5 = sort(unique(vect5))
+  sig5 = End_stats[c(vect5),]
+  sig5 = sig5 %>%
+    mutate("Rank" = rank(sig5$`Conditionally Expected Excess`))
+  sig5["Color"] = NA
+  for(j in 1:length(sig5$Rank)){
+    if(sig5$Rank[j] == 1){
+      sig5$Color[j] = "green"}
+    if(sig5$Rank[j] == 2){
+      sig5$Color[j] = "yellow"}
+    if(sig5$Rank[j] == 3){
+      sig5$Color[j] = "red"}}
+  if(End_stats$`Expected Difference`[i+1] == max(End_stats$`Expected Difference`) |
+     End_stats$`Expected Difference`[i+1] == min(End_stats$`Expected Difference`)){
+    vect6 = append(vect6, i+1)}
+  vect6 = sort(unique(vect6))
+  sig6 = End_stats[c(vect6),]
+  sig6 = sig6 %>%
+    mutate("Rank" = rank(sig6$`Expected Difference`))
+  sig6["Color"] = NA
+  for(j in 1:length(sig6$Rank)){
+    if(sig6$Rank[j] == 1){
+      sig6$Color[j] = "green"}
+    if(sig6$Rank[j] == 2){
+      sig6$Color[j] = "yellow"}
+    if(sig6$Rank[j] == 3){
+      sig6$Color[j] = "red"}}}
+  
+
+a = ggplot(data = End_stats, aes(x = Std, y = Mean)) +
+  geom_point() + 
+  geom_label(data=sig0[1,], aes(x = Std+250, y = Mean + 1000,
+                                   label = paste0("Smallest Risk: ", Num, "/", 100-Num, "\n",
+                                    "SD = ", round(Std, 4))),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig0, aes(color=Allocation), size=4) +
+  scale_color_manual(values = sig0$Color) +
+  labs(title = "Mean vs Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 4, byrow = TRUE))
+
+  
+b = ggplot(data = End_stats, aes(x = Num, y = `P[0 < Balalce]`)) +
+  geom_point() + 
+  geom_label(data=sig1[2,], aes(x = Num, y = `P[0 < Balalce]`-0.05,
+                                   label = paste0("Highest Probability: ", Num, "/", 100-Num, "\n",
+                                    "P[0 < Balance] = ", 100 * round(`P[0 < Balalce]`, 4), "%")),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig1, aes(color=Allocation), size=4) +
+  scale_color_manual(values = sig1$Color) +
+  labs(title = "Fund Sufficiency") +
+  ylab("Probability") +
+  xlab("Asset Allocation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 4, byrow = TRUE))
+
+sig4 = sig4 %>%
+  mutate("Value" = sig4$`Conditionally Expected Deficit`) %>%
+  mutate("Type" = "Deficit")
+
+sig5 = sig5 %>%
+  mutate("Value" = sig5$`Conditionally Expected Excess`) %>%
+  mutate("Type" = "Surplus")
+
+sig45 = rbind(sig4, sig5)
+
+data1 = End_stats[, c(1,2,11)]
+data2 = End_stats[, c(1,2,12)]
+
+data1 = data1 %>%
+  mutate("Value" = data1$`Conditionally Expected Deficit`) %>%
+  mutate("Type" = "Deficit")
+
+data1 = data1[,c(1,2,4,5)]
+
+data2 = data2 %>%
+  mutate("Value" = data2$`Conditionally Expected Excess`) %>%
+  mutate("Type" = "Surplus")
+
+data2 = data2[,c(1,2,4,5)]
+
+data12 = rbind(data1, data2)
+
+data12["Fill"] = NA
+data12$Fill[1:101] = "purple"
+data12$Fill[102:202] = "black"
+
+
+for(i in c(1,2,5,6)){
+  levels(sig45$Allocation) <- c(levels(sig45$Allocation), 
+                                c(paste0(sig45$Allocation[i], " - (", sig45$Type[i],")")))
+  sig45$Allocation[i] = paste0(sig45$Allocation[i], " - (", sig45$Type[i],")")}
+
+sig45["start"] = NA
+sig45["unit"] = NA
+sig45["nudge_x"] = NA
+sig45["nudge_y"] = NA
+
+for(i in c(2,5)){
+  if(i == 2){
+    sig45$start[i] = "Deficit"
+    sig45$unit[i] = "-$"
+    sig45$nudge_x[i] = 0
+    sig45$nudge_y[i] = 1400}
+  if(i == 5){
+    sig45$start[i] = "Surplus"
+    sig45$unit[i] = "$"
+    sig45$nudge_x[i] = 10
+    sig45$nudge_y[i] = 900}}
+
+data12$Fill = factor(data12$Fill, levels = c("purple", "black"))
+
+c = ggplot(data = data12, aes(x = Num, y = Value, color = factor(Type))) +
+  geom_point() +
+  # geom_point(data = data12[1:101,], aes(x=Num, y=Value), color = "purple") + 
+  geom_label(data=sig45[c(2,5),], aes(x = Num + nudge_x, y = nudge_y,
+                                   label = paste0("Smallest ", start, ": ", Num, "/", 100-Num, "\n",
+                                    "Amount = ", unit, round(abs(Value), 4))),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig45, aes(x=Num, y = Value, color=Allocation), size=4) +
+  scale_color_manual(values =  c("purple", "yellow", "green", "red", "green", "orange", "yellow", "black", "green")) +
+  # scale_discrete_manual(aesthetics = c("colour", "fill"), values = c(unique(data12$Fill)), labels = c("Average Deficit", "Average Excess")) +
+  labs(title = "Deficit and Surplus Funds") +
+  ylab("Amount ($ Millions)") +
+  xlab("Asset Allocation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 9, byrow = TRUE))
+  
+grid.arrange(a,b,c, ncol=1, top=text_grob("Pension", size = 18, face = "bold", hjust = 1.4))
+```
+
+
+# Top up
+```{r, warning=FALSE}
+
+insolvency_rate = 0.0700
+for(i in 0:100){
+  Top_up = Pension
+  Top_up[,2:31] = NA
+  Top_up$Year0 = c(rep(700, 1000)) 
+  weight = get(paste0("Weighted_", i))
+  for(j in 1:30){
+    frame = data.frame(matrix(ncol=2,nrow=1000))
+    frame[,1] = c(seq(1,1000,1))
+    frame[,2] = c(rep(payments[1,j],1000))
+    data = cbind(data.frame(frame[,1]), data.frame(Top_up[,j]), data.frame(weight[,j]), data.frame(frame[,2]))
+    colnames(data) = c("Num", "Last_Year", "Weight", "payment")
+    sub1 = subset(data, data$Last_Year > 0)
+    sub2 = subset(data, data$Last_Year < 0)
+    sub1 = sub1 %>%
+      mutate("Balance" = sub1$Last_Year * (1+sub1$Weight) - sub1$payment)
+    if(length(sub1$Num) != 1000){
+      sub2 = sub2 %>%
+        mutate("Balance" = sub2$Last_Year * (1 + insolvency_rate) - sub2$payment)}
+    data = rbind(sub1, sub2)
+    data_num = order(data$Num)
+    data = data[c(data_num),]
+    Top_up[1:1000, j+1] = data$Balance[1:1000]}
+  assign(paste0("Top_up_", i), Top_up)}
+  
+for(i in 0:100){
+  end1 = get(paste0("Top_up_", i))
+  if(i == 0){
+    End1_Balance = data.frame(end1$Year30)}
+  if(i != 0){
+    End1_Balance = cbind(End1_Balance, data.frame(end1$Year30))}
+  colnames(End1_Balance)[i+1] = paste0("Top_up_", i)}
+
+vect0 = vector()
+for(i in 0:100){
+  vect0 = append(vect0, paste0("Large Cap: ", i, "% | ", "Fixed: ", 100-i, "%"))}
+
+ci = 0.05*525
+End1_stats = data.frame(matrix(nrow = 101, ncol = 13))
+colnames(End1_stats) = c("Allocation", "Num", "Mean", "Std", "P[0 < Balalce]", "P[-26.25 < Balalce]", "Average Deficit", "Under_Std", "Average Excess", "Over_Std", "Conditionally Expected Deficit", "Conditionally Expected Excess", "Expected Difference" )
+End1_stats$Allocation = c(vect0)
+End1_stats$Allocation = factor(End1_stats$Allocation, levels = c(End1_stats$Allocation))
+End1_stats$Num = c(seq(0,100,1))
+
+for(i in 0:100){
+  End1 = End1_Balance[,i+1]
+  end1_under = subset(End1_Balance[, i+1], End1_Balance[, i+1] < 0)
+  end1_over = subset(End1_Balance[, i+1], End1_Balance[, i+1] > 0)
+  End1_stats$Mean[i+1] = mean(End1)
+  End1_stats$Std[i+1] = sqrt(var(End1))
+  End1_stats$`P[0 < Balalce]`[i+1] = pnorm(0, mean = End1_stats$Mean[i+1], sd = End1_stats$Std[i+1], lower.tail = FALSE)
+  End1_stats$`P[-26.25 < Balalce]`[i+1] = pnorm(-26.25, mean = End1_stats$Mean[i+1], sd = End1_stats$Std[i+1], lower.tail = FALSE)
+  End1_stats$`Average Deficit`[i+1] = mean(end1_under)
+  End1_stats$Under_Std[i+1] = sqrt(var(end1_under))
+  End1_stats$`Average Excess`[i+1] = mean(end1_over)
+  End1_stats$Over_Std[i+1] = sqrt(var(end1_over))
+  End1_stats$`Conditionally Expected Deficit`[i+1] = End1_stats$`Average Deficit`[i+1] * (1 - End1_stats$`P[0 < Balalce]`)
+  End1_stats$`Conditionally Expected Excess`[i+1] = End1_stats$`Average Excess`[i+1] * End1_stats$`P[0 < Balalce]`
+  End1_stats$`Expected Difference`[i+1] = End1_stats$`Conditionally Expected Deficit`[i+1] + End1_stats$`Conditionally Expected Excess`[i+1]}
+
+prob = cbind(prob, data.frame(End1_stats[,c(1,2,5)]))
+prob = prob[,c(1,2,3,6)]
+colnames(prob)[3:4] = c("Pension", "Top-Up")
+prob = prob %>%
+  mutate("Improvement" = (prob$`Top-Up` - prob$Pension)/prob$Pension)
+
+prob
+vect0 = vector()
+vect0 = append(vect0, c(1,61,101))
+vect1 = vect0
+vect2 = vect0
+vect3 = vect0
+vect4 = vect0
+vect5 = vect0
+vect6 = vect0
+for(i in 0:100){
+  if(End1_stats$Std[i+1] == max(End1_stats$Std) |
+     End1_stats$Std[i+1] == min(End1_stats$Std)){
+    vect0 = append(vect0, i+1)}
+  vect0 = sort(unique(vect0))
+  sig0 = End1_stats[c(vect0),]
+  sig0 = sig0 %>%
+    mutate("Rank" = rank(sig0$Std))
+  sig0["Color"] = NA
+  for(j in 1:length(sig0$Rank)){
+    if(sig0$Rank[j] == 1){
+      sig0$Color[j] = "green"}
+    if(sig0$Rank[j] == 2){
+      sig0$Color[j] = "yellow"}
+    if(sig0$Rank[j] == 3){
+      sig0$Color[j] = "orange"}
+    if(sig0$Rank[j] == 4){
+      sig0$Color[j] = "red"}}
+  if(End1_stats$`P[0 < Balalce]`[i+1] == max(End1_stats$`P[0 < Balalce]`) |
+     End1_stats$`P[0 < Balalce]`[i+1] == min(End1_stats$`P[0 < Balalce]`)){
+    vect1 = append(vect1, i+1)}
+  vect1 = sort(unique(vect1))
+  sig1B = End1_stats[c(vect1),]
+  sig1B = sig1B %>%
+    mutate("Rank" = 5 - rank(sig1B$`P[0 < Balalce]`))
+  sig1B["Color"] = NA
+  for(j in 1:length(sig1B$Rank)){
+    if(sig1B$Rank[j] == 1){
+      sig1B$Color[j] = "green"}
+    if(sig1B$Rank[j] == 2){
+      sig1B$Color[j] = "yellow"}
+    if(sig1B$Rank[j] == 3){
+      sig1B$Color[j] = "orange"}
+    if(sig1B$Rank[j] == 4){
+      sig1B$Color[j] = "red"}}
+  if(End1_stats$`Average Deficit`[i+1] == max(End1_stats$`Average Deficit`) |
+     End1_stats$`Average Deficit`[i+1] == min(End1_stats$`Average Deficit`)){
+    vect2 = append(vect2, i+1)}
+  vect2 = sort(unique(vect2))
+  sig2 = End1_stats[c(vect2),]
+  sig2 = sig2 %>%
+    mutate("Rank" = 5-rank(sig2$`Average Deficit`))
+  sig2["Color"] = NA
+  for(j in 1:length(sig2$Rank)){
+    if(sig2$Rank[j] == 1){
+      sig2$Color[j] = "green"}
+    if(sig2$Rank[j] == 2){
+      sig2$Color[j] = "yellow"}
+    if(sig2$Rank[j] == 3){
+      sig2$Color[j] = "orange"}
+    if(sig2$Rank[j] == 4){
+      sig2$Color[j] = "red"}}
+  if(End1_stats$`Average Excess`[i+1] == max(End1_stats$`Average Excess`) |
+     End1_stats$`Average Excess`[i+1] == min(End1_stats$`Average Excess`)){
+    vect3 = append(vect3, i+1)}
+  vect3 = sort(unique(vect3))
+  sig3 = End1_stats[c(vect3),]
+  sig3 = sig3 %>%
+    mutate("Rank" = rank(sig3$`Average Excess`))
+  sig3["Color"] = NA
+  for(j in 1:length(sig3$Rank)){
+    if(sig3$Rank[j] == 1){
+      sig3$Color[j] = "green"}
+    if(sig3$Rank[j] == 2){
+      sig3$Color[j] = "yellow"}
+    if(sig3$Rank[j] == 3){
+      sig3$Color[j] = "red"}}
+  if(End1_stats$`Conditionally Expected Deficit`[i+1] == max(End1_stats$`Conditionally Expected Deficit`) |
+     End1_stats$`Conditionally Expected Deficit`[i+1] == min(End1_stats$`Conditionally Expected Deficit`)){
+    vect4 = append(vect4, i+1)}
+  vect4 = sort(unique(vect4))
+  sig4 = End1_stats[c(vect4),]
+  sig4 = sig4 %>%
+    mutate("Rank" = 5-rank(sig4$`Conditionally Expected Deficit`))
+  sig4["Color"] = NA
+  for(j in 1:length(sig4$Rank)){
+    if(sig4$Rank[j] == 1){
+      sig4$Color[j] = "green"}
+    if(sig4$Rank[j] == 2){
+      sig4$Color[j] = "yellow"}
+    if(sig4$Rank[j] == 3){
+      sig4$Color[j] = "orange"}
+    if(sig4$Rank[j] == 4){
+      sig4$Color[j] = "red"}}
+  if(End1_stats$`Conditionally Expected Excess`[i+1] == max(End1_stats$`Conditionally Expected Excess`) |
+     End1_stats$`Conditionally Expected Excess`[i+1] == min(End1_stats$`Conditionally Expected Excess`)){
+    vect5 = append(vect5, i+1)}
+  vect5 = sort(unique(vect5))
+  sig5 = End1_stats[c(vect5),]
+  sig5 = sig5 %>%
+    mutate("Rank" = rank(sig5$`Conditionally Expected Excess`))
+  sig5["Color"] = NA
+  for(j in 1:length(sig5$Rank)){
+    if(sig5$Rank[j] == 1){
+      sig5$Color[j] = "green"}
+    if(sig5$Rank[j] == 2){
+      sig5$Color[j] = "yellow"}
+    if(sig5$Rank[j] == 3){
+      sig5$Color[j] = "red"}}
+  if(End1_stats$`Expected Difference`[i+1] == max(End1_stats$`Expected Difference`) |
+     End1_stats$`Expected Difference`[i+1] == min(End1_stats$`Expected Difference`)){
+    vect6 = append(vect6, i+1)}
+  vect6 = sort(unique(vect6))
+  sig6 = End1_stats[c(vect6),]
+  sig6 = sig6 %>%
+    mutate("Rank" = rank(sig6$`Expected Difference`))
+  sig6["Color"] = NA
+  for(j in 1:length(sig6$Rank)){
+    if(sig6$Rank[j] == 1){
+      sig6$Color[j] = "green"}
+    if(sig6$Rank[j] == 2){
+      sig6$Color[j] = "yellow"}
+    if(sig6$Rank[j] == 3){
+      sig6$Color[j] = "red"}}}
+  
+
+a = ggplot(data = End1_stats, aes(x = Std, y = Mean)) +
+  geom_point() + 
+  geom_label(data=sig0[2,], aes(x = Std+250, y = Mean + 2000,
+                                   label = paste0("Smallest Risk: ", Num, "/", 100-Num, "\n",
+                                    "SD = ", round(Std, 4))),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig0, aes(color=Allocation), size=4) +
+  scale_color_manual(values = sig0$Color) +
+  labs(title = "Mean vs Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 4, byrow = TRUE))
+
+  
+b = ggplot(data = End1_stats, aes(x = Num, y = `P[0 < Balalce]`)) +
+  geom_point() + 
+  geom_label(data=sig1B[2,], aes(x = Num, y = `P[0 < Balalce]`-0.05,
+                                   label = paste0("Highest Probability: ", Num, "/", 100-Num, "\n",
+                                    "P[0 < Balance] = ", 100 * round(`P[0 < Balalce]`, 4), "%")),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig1B, aes(color=Allocation), size=4) +
+  scale_color_manual(values = sig1B$Color) +
+  labs(title = "Fund Sufficiency") +
+  ylab("Probability") +
+  xlab("Asset Allocation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 4, byrow = TRUE))
+
+sig4 = sig4 %>%
+  mutate("Value" = sig4$`Conditionally Expected Deficit`) %>%
+  mutate("Type" = "Deficit")
+
+sig5 = sig5 %>%
+  mutate("Value" = sig5$`Conditionally Expected Excess`) %>%
+  mutate("Type" = "Surplus")
+
+sig45 = rbind(sig4, sig5)
+
+data1 = End1_stats[, c(1,2,11)]
+data2 = End1_stats[, c(1,2,12)]
+
+data1 = data1 %>%
+  mutate("Value" = data1$`Conditionally Expected Deficit`) %>%
+  mutate("Type" = "Deficit")
+
+data1 = data1[,c(1,2,4,5)]
+
+data2 = data2 %>%
+  mutate("Value" = data2$`Conditionally Expected Excess`) %>%
+  mutate("Type" = "Surplus")
+
+data2 = data2[,c(1,2,4,5)]
+
+data12 = rbind(data1, data2)
+
+data12["Fill"] = NA
+data12$Fill[1:101] = "purple"
+data12$Fill[102:202] = "black"
+
+
+for(i in c(1,2,5,6)){
+  levels(sig45$Allocation) <- c(levels(sig45$Allocation), 
+                                c(paste0(sig45$Allocation[i], " - (", sig45$Type[i],")")))
+  sig45$Allocation[i] = paste0(sig45$Allocation[i], " - (", sig45$Type[i],")")}
+
+sig45["start"] = NA
+sig45["unit"] = NA
+sig45["nudge_x"] = NA
+sig45["nudge_y"] = NA
+
+for(i in c(2,5)){
+  if(i == 2){
+    sig45$start[i] = "Deficit"
+    sig45$unit[i] = "-$"
+    sig45$nudge_x[i] = 5
+    sig45$nudge_y[i] = 3100}
+  if(i == 5){
+    sig45$start[i] = "Surplus"
+    sig45$unit[i] = "$"
+    sig45$nudge_x[i] = 10
+    sig45$nudge_y[i] = 2000}}
+
+data12$Fill = factor(data12$Fill, levels = c("purple", "black"))
+
+c = ggplot(data = data12, aes(x = Num, y = Value, color = factor(Type))) +
+  geom_point() +
+  # geom_point(data = data12[1:101,], aes(x=Num, y=Value), color = "purple") + 
+  geom_label(data=sig45[c(2,5),], aes(x = Num + nudge_x, y = nudge_y,
+                                   label = paste0("Smallest ", start, ": ", Num, "/", 100-Num, "\n",
+                                    "Amount = ", unit, round(abs(Value), 4))),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig45, aes(x=Num, y = Value, color=Allocation), size=4) +
+  scale_color_manual(values =  c("purple", "yellow", "green", "red", "green", "orange", "yellow", "black", "green")) +
+  # scale_discrete_manual(aesthetics = c("colour", "fill"), values = c(unique(data12$Fill)), labels = c("Average Deficit", "Average Excess")) +
+  labs(title = "Deficit and Surplus Funds") +
+  ylab("Amount ($ Millions)") +
+  xlab("Asset Allocation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 9, byrow = TRUE))
+  
+grid.arrange(a,b,c, ncol=1, top=text_grob("Top-Up", size = 18, face = "bold", hjust = 1.4))
+
+
+```
+
+
+```{r}
+
+
+
+End_stats = End1_stats %>%
+  mutate("Pension" = "Top-Up")
+
+End1_stats = End1_stats %>%
+  mutate("Pension" = "Pension")
+
+sig1 = sig1 %>%
+  mutate("Pension" = "Pension")
+
+sig1B = sig1B %>%
+  mutate("Pension" = "Top-Up")
+
+End2_stats = rbind(End_stats, End1_stats)
+
+sig1B2 = rbind(sig1, sig1B)
+
+d = ggplot(data = End2_stats, aes(x = Num, y = `P[0 < Balalce]`, color = factor(Pension))) +
+  geom_point() + 
+  geom_label(data=sig1B2[2,], aes(x = Num, y = `P[0 < Balalce]`-0.05,
+                                   label = paste0("Highest Probability: ", Num, "/", 100-Num, "\n",
+                                    "SD = ", round(`P[0 < Balalce]`, 4))),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig1B2, aes(color=Allocation), size=4) +
+  scale_color_manual(values = sig1B2$Color) +
+  labs(title = "Fund Sufficiency") +
+  ylab("Probability") +
+  xlab("Asset Allocation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 4, byrow = TRUE))
+
+
+
+grid.arrange(d, ncol=1, top=text_grob("Pension vs. Top-Up", size = 18, face = "bold", hjust = 1.4))
+```
+
+
+
+# Top up 2
+```{r, warning=FALSE}
+
+insolvency_rate = 0.0700
+for(i in 0:100){
+  Top_up2 = Pension
+  Top_up2[,2:31] = NA
+  Top_up2$Year0 = c(rep(800, 1000)) 
+  weight = get(paste0("Weighted_", i))
+  for(j in 1:30){
+    frame = data.frame(matrix(ncol=2,nrow=1000))
+    frame[,1] = c(seq(1,1000,1))
+    frame[,2] = c(rep(payments[1,j],1000))
+    data = cbind(data.frame(frame[,1]), data.frame(Top_up2[,j]), data.frame(weight[,j]), data.frame(frame[,2]))
+    colnames(data) = c("Num", "Last_Year", "Weight", "payment")
+    sub1 = subset(data, data$Last_Year > 0)
+    sub2 = subset(data, data$Last_Year < 0)
+    sub1 = sub1 %>%
+      mutate("Balance" = sub1$Last_Year * (1+sub1$Weight) - sub1$payment)
+    if(length(sub1$Num) != 1000){
+      sub2 = sub2 %>%
+        mutate("Balance" = sub2$Last_Year * (1 + insolvency_rate) - sub2$payment)}
+    data = rbind(sub1, sub2)
+    data_num = order(data$Num)
+    data = data[c(data_num),]
+    Top_up2[1:1000, j+1] = data$Balance[1:1000]}
+  assign(paste0("Top_up2_", i), Top_up2)}
+  
+for(i in 0:100){
+  end2 = get(paste0("Top_up2_", i))
+  if(i == 0){
+    End2_Balance = data.frame(end2$Year30)}
+  if(i != 0){
+    End2_Balance = cbind(End2_Balance, data.frame(end2$Year30))}
+  colnames(End2_Balance)[i+1] = paste0("Top_up2_", i)}
+
+vect0 = vector()
+for(i in 0:100){
+  vect0 = append(vect0, paste0("Large Cap: ", i, "% | ", "Fixed: ", 100-i, "%"))}
+
+ci = 0.05*525
+End2_stats = data.frame(matrix(nrow = 101, ncol = 13))
+colnames(End2_stats) = c("Allocation", "Num", "Mean", "Std", "P[0 < Balalce]", "P[-26.25 < Balalce]", "Average Deficit", "Under_Std", "Average Excess", "Over_Std", "Conditionally Expected Deficit", "Conditionally Expected Excess", "Expected Difference" )
+End2_stats$Allocation = c(vect0)
+End2_stats$Allocation = factor(End2_stats$Allocation, levels = c(End2_stats$Allocation))
+End2_stats$Num = c(seq(0,100,1))
+
+for(i in 0:100){
+  End2 = End2_Balance[,i+1]
+  end2_under = subset(End2_Balance[, i+1], End2_Balance[, i+1] < 0)
+  end2_over = subset(End2_Balance[, i+1], End2_Balance[, i+1] > 0)
+  End2_stats$Mean[i+1] = mean(End2)
+  End2_stats$Std[i+1] = sqrt(var(End2))
+  End2_stats$`P[0 < Balalce]`[i+1] = pnorm(0, mean = End2_stats$Mean[i+1], sd = End2_stats$Std[i+1], lower.tail = FALSE)
+  End2_stats$`P[-26.25 < Balalce]`[i+1] = pnorm(-26.25, mean = End2_stats$Mean[i+1], sd = End2_stats$Std[i+1], lower.tail = FALSE)
+  End2_stats$`Average Deficit`[i+1] = mean(end2_under)
+  End2_stats$Under_Std[i+1] = sqrt(var(end2_under))
+  End2_stats$`Average Excess`[i+1] = mean(end2_over)
+  End2_stats$Over_Std[i+1] = sqrt(var(end2_over))
+  End2_stats$`Conditionally Expected Deficit`[i+1] = End2_stats$`Average Deficit`[i+1] * (1 - End2_stats$`P[0 < Balalce]`)
+  End2_stats$`Conditionally Expected Excess`[i+1] = End2_stats$`Average Excess`[i+1] * End2_stats$`P[0 < Balalce]`
+  End2_stats$`Expected Difference`[i+1] = End2_stats$`Conditionally Expected Deficit`[i+1] + End2_stats$`Conditionally Expected Excess`[i+1]}
+
+prob = cbind(prob, data.frame(End2_stats[,c(1,2,5)]))
+prob = prob[,c(1,2,3,6)]
+colnames(prob)[3:4] = c("Pension", "Top-up2")
+prob = prob %>%
+  mutate("Improvement" = (prob$`Top-up2` - prob$Pension)/prob$Pension)
+
+prob
+vect0 = vector()
+vect0 = append(vect0, c(1,61,101))
+vect1 = vect0
+vect2 = vect0
+vect3 = vect0
+vect4 = vect0
+vect5 = vect0
+vect6 = vect0
+for(i in 0:100){
+  if(End2_stats$Std[i+1] == max(End2_stats$Std) |
+     End2_stats$Std[i+1] == min(End2_stats$Std)){
+    vect0 = append(vect0, i+1)}
+  vect0 = sort(unique(vect0))
+  sig0 = End2_stats[c(vect0),]
+  sig0 = sig0 %>%
+    mutate("Rank" = rank(sig0$Std))
+  sig0["Color"] = NA
+  for(j in 1:length(sig0$Rank)){
+    if(sig0$Rank[j] == 1){
+      sig0$Color[j] = "green"}
+    if(sig0$Rank[j] == 2){
+      sig0$Color[j] = "yellow"}
+    if(sig0$Rank[j] == 3){
+      sig0$Color[j] = "orange"}
+    if(sig0$Rank[j] == 4){
+      sig0$Color[j] = "red"}}
+  if(End2_stats$`P[0 < Balalce]`[i+1] == max(End2_stats$`P[0 < Balalce]`) |
+     End2_stats$`P[0 < Balalce]`[i+1] == min(End2_stats$`P[0 < Balalce]`)){
+    vect1 = append(vect1, i+1)}
+  vect1 = sort(unique(vect1))
+  sig1B = End2_stats[c(vect1),]
+  sig1B = sig1B %>%
+    mutate("Rank" = 5 - rank(sig1B$`P[0 < Balalce]`))
+  sig1B["Color"] = NA
+  for(j in 1:length(sig1B$Rank)){
+    if(sig1B$Rank[j] == 1){
+      sig1B$Color[j] = "green"}
+    if(sig1B$Rank[j] == 2){
+      sig1B$Color[j] = "yellow"}
+    if(sig1B$Rank[j] == 3){
+      sig1B$Color[j] = "orange"}
+    if(sig1B$Rank[j] == 4){
+      sig1B$Color[j] = "red"}}
+  if(End2_stats$`Average Deficit`[i+1] == max(End2_stats$`Average Deficit`) |
+     End2_stats$`Average Deficit`[i+1] == min(End2_stats$`Average Deficit`)){
+    vect2 = append(vect2, i+1)}
+  vect2 = sort(unique(vect2))
+  sig2 = End2_stats[c(vect2),]
+  sig2 = sig2 %>%
+    mutate("Rank" = 5-rank(sig2$`Average Deficit`))
+  sig2["Color"] = NA
+  for(j in 1:length(sig2$Rank)){
+    if(sig2$Rank[j] == 1){
+      sig2$Color[j] = "green"}
+    if(sig2$Rank[j] == 2){
+      sig2$Color[j] = "yellow"}
+    if(sig2$Rank[j] == 3){
+      sig2$Color[j] = "orange"}
+    if(sig2$Rank[j] == 4){
+      sig2$Color[j] = "red"}}
+  if(End2_stats$`Average Excess`[i+1] == max(End2_stats$`Average Excess`) |
+     End2_stats$`Average Excess`[i+1] == min(End2_stats$`Average Excess`)){
+    vect3 = append(vect3, i+1)}
+  vect3 = sort(unique(vect3))
+  sig3 = End2_stats[c(vect3),]
+  sig3 = sig3 %>%
+    mutate("Rank" = rank(sig3$`Average Excess`))
+  sig3["Color"] = NA
+  for(j in 1:length(sig3$Rank)){
+    if(sig3$Rank[j] == 1){
+      sig3$Color[j] = "green"}
+    if(sig3$Rank[j] == 2){
+      sig3$Color[j] = "yellow"}
+    if(sig3$Rank[j] == 3){
+      sig3$Color[j] = "red"}}
+  if(End2_stats$`Conditionally Expected Deficit`[i+1] == max(End2_stats$`Conditionally Expected Deficit`) |
+     End2_stats$`Conditionally Expected Deficit`[i+1] == min(End2_stats$`Conditionally Expected Deficit`)){
+    vect4 = append(vect4, i+1)}
+  vect4 = sort(unique(vect4))
+  sig4 = End2_stats[c(vect4),]
+  sig4 = sig4 %>%
+    mutate("Rank" = 5-rank(sig4$`Conditionally Expected Deficit`))
+  sig4["Color"] = NA
+  for(j in 1:length(sig4$Rank)){
+    if(sig4$Rank[j] == 1){
+      sig4$Color[j] = "green"}
+    if(sig4$Rank[j] == 2){
+      sig4$Color[j] = "yellow"}
+    if(sig4$Rank[j] == 3){
+      sig4$Color[j] = "orange"}
+    if(sig4$Rank[j] == 4){
+      sig4$Color[j] = "red"}}
+  if(End2_stats$`Conditionally Expected Excess`[i+1] == max(End2_stats$`Conditionally Expected Excess`) |
+     End2_stats$`Conditionally Expected Excess`[i+1] == min(End2_stats$`Conditionally Expected Excess`)){
+    vect5 = append(vect5, i+1)}
+  vect5 = sort(unique(vect5))
+  sig5 = End2_stats[c(vect5),]
+  sig5 = sig5 %>%
+    mutate("Rank" = rank(sig5$`Conditionally Expected Excess`))
+  sig5["Color"] = NA
+  for(j in 1:length(sig5$Rank)){
+    if(sig5$Rank[j] == 1){
+      sig5$Color[j] = "green"}
+    if(sig5$Rank[j] == 2){
+      sig5$Color[j] = "yellow"}
+    if(sig5$Rank[j] == 3){
+      sig5$Color[j] = "red"}}
+  if(End2_stats$`Expected Difference`[i+1] == max(End2_stats$`Expected Difference`) |
+     End2_stats$`Expected Difference`[i+1] == min(End2_stats$`Expected Difference`)){
+    vect6 = append(vect6, i+1)}
+  vect6 = sort(unique(vect6))
+  sig6 = End2_stats[c(vect6),]
+  sig6 = sig6 %>%
+    mutate("Rank" = rank(sig6$`Expected Difference`))
+  sig6["Color"] = NA
+  for(j in 1:length(sig6$Rank)){
+    if(sig6$Rank[j] == 1){
+      sig6$Color[j] = "green"}
+    if(sig6$Rank[j] == 2){
+      sig6$Color[j] = "yellow"}
+    if(sig6$Rank[j] == 3){
+      sig6$Color[j] = "red"}}}
+  
+
+a = ggplot(data = End2_stats, aes(x = Std, y = Mean)) +
+  geom_point() + 
+  geom_label(data=sig0[2,], aes(x = Std+250, y = Mean + 2000,
+                                   label = paste0("Smallest Risk: ", Num, "/", 100-Num, "\n",
+                                    "SD = ", round(Std, 4))),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig0, aes(color=Allocation), size=4) +
+  scale_color_manual(values = sig0$Color) +
+  labs(title = "Mean vs Standard Deviation") +
+  ylab("Mean") +
+  xlab("Standard Deviation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 4, byrow = TRUE))
+
+  
+b = ggplot(data = End2_stats, aes(x = Num, y = `P[0 < Balalce]`)) +
+  geom_point() + 
+  geom_label(data=sig1B[2,], aes(x = Num, y = `P[0 < Balalce]`-0.05,
+                                   label = paste0("Highest Probability: ", Num, "/", 100-Num, "\n",
+                                    "P[0 < Balance] = ", 100 * round(`P[0 < Balalce]`, 4), "%")),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig1B, aes(color=Allocation), size=4) +
+  scale_color_manual(values = sig1B$Color) +
+  labs(title = "Fund Sufficiency") +
+  ylab("Probability") +
+  xlab("Asset Allocation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 4, byrow = TRUE))
+
+sig4 = sig4 %>%
+  mutate("Value" = sig4$`Conditionally Expected Deficit`) %>%
+  mutate("Type" = "Deficit")
+
+sig5 = sig5 %>%
+  mutate("Value" = sig5$`Conditionally Expected Excess`) %>%
+  mutate("Type" = "Surplus")
+
+sig45 = rbind(sig4, sig5)
+
+data1 = End2_stats[, c(1,2,11)]
+data2 = End2_stats[, c(1,2,12)]
+
+data1 = data1 %>%
+  mutate("Value" = data1$`Conditionally Expected Deficit`) %>%
+  mutate("Type" = "Deficit")
+
+data1 = data1[,c(1,2,4,5)]
+
+data2 = data2 %>%
+  mutate("Value" = data2$`Conditionally Expected Excess`) %>%
+  mutate("Type" = "Surplus")
+
+data2 = data2[,c(1,2,4,5)]
+
+data12 = rbind(data1, data2)
+
+data12["Fill"] = NA
+data12$Fill[1:101] = "purple"
+data12$Fill[102:202] = "black"
+
+
+for(i in c(1,2,5,6)){
+  levels(sig45$Allocation) <- c(levels(sig45$Allocation), 
+                                c(paste0(sig45$Allocation[i], " - (", sig45$Type[i],")")))
+  sig45$Allocation[i] = paste0(sig45$Allocation[i], " - (", sig45$Type[i],")")}
+
+sig45["start"] = NA
+sig45["unit"] = NA
+sig45["nudge_x"] = NA
+sig45["nudge_y"] = NA
+
+for(i in c(2,5)){
+  if(i == 2){
+    sig45$start[i] = "Deficit"
+    sig45$unit[i] = "-$"
+    sig45$nudge_x[i] = 5
+    sig45$nudge_y[i] = 3100}
+  if(i == 5){
+    sig45$start[i] = "Surplus"
+    sig45$unit[i] = "$"
+    sig45$nudge_x[i] = 10
+    sig45$nudge_y[i] = 2000}}
+
+data12$Fill = factor(data12$Fill, levels = c("purple", "black"))
+
+c = ggplot(data = data12, aes(x = Num, y = Value, color = factor(Type))) +
+  geom_point() +
+  # geom_point(data = data12[1:101,], aes(x=Num, y=Value), color = "purple") + 
+  geom_label(data=sig45[c(2,5),], aes(x = Num + nudge_x, y = nudge_y,
+                                   label = paste0("Smallest ", start, ": ", Num, "/", 100-Num, "\n",
+                                    "Amount = ", unit, round(abs(Value), 4))),
+             color = "darkgreen", size=4) +
+  geom_point(data = sig45, aes(x=Num, y = Value, color=Allocation), size=4) +
+  scale_color_manual(values =  c("purple", "yellow", "green", "red", "green", "orange", "yellow", "black", "green")) +
+  # scale_discrete_manual(aesthetics = c("colour", "fill"), values = c(unique(data12$Fill)), labels = c("Average Deficit", "Average Excess")) +
+  labs(title = "Deficit and Surplus Funds") +
+  ylab("Amount ($ Millions)") +
+  xlab("Asset Allocation") +
+  theme(plot.title = element_text(hjust = 0.5, size =15),
+        axis.text = element_text(size = 10),
+        axis.title = element_text(size=12),
+        strip.text = element_text(size=12),
+        legend.position = "right",
+        legend.text = element_text(size=10, vjust = 0.5),
+        legend.title = element_blank(),
+        legend.box = "vertical",
+        legend.margin=unit(0, "cm")) +
+  guides(color = guide_legend(nrow = 9, byrow = TRUE))
+  
+grid.arrange(a,b,c, ncol=1, top=text_grob("Top-up2", size = 18, face = "bold", hjust = 1.4))
 ```
